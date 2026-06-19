@@ -155,7 +155,7 @@ use the same `FORWARDING_SECRET` as Velocity.
 - The workflow uses `BRIDGE_PACKAGES_TOKEN` (PAT with `read:packages` and `repo` if Bridge is private) and `BRIDGE_PACKAGES_USERNAME` if provided; otherwise it falls back to the default `GITHUB_TOKEN`/actor. Add the secret in repo settings if builds need to read Bridge from another private repo.
 
 ## Current fork status
-- Latest validated release: `v2.4`.
+- Latest validated release: `v2.5`.
 - Last validated current Minecraft release: `26.2`.
-- `v2.4` fixes current-version login listener discovery and preserves the full bundled server jar when patching 26.x releases.
+- `v2.5` also makes the selected login listener connection field accessible to the injected packet hook, fixing Minecraft 26.2 Velocity logins.
 - The CapRover vanilla image downloads the latest release asset from this fork and was validated with Minecraft `26.2`.

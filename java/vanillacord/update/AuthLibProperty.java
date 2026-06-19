@@ -25,6 +25,10 @@ class AuthLibProperty extends AttributeKey {
                 );
                 return;
         }
+        if (opcode == INVOKEVIRTUAL && owner.equals("com/mojang/authlib/GameProfile") && name.equals("getProperties")) {
+            mv.visitMethodInsn(INVOKEVIRTUAL, owner, "properties", descriptor, isInterface);
+            return;
+        }
         super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
     }
 }

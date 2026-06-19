@@ -21,28 +21,33 @@ with urlopen(sys.argv[1], timeout=30) as response:
     sys.stdout.write(response.read().decode("utf-8"))
 PY
 )"
-export MANIFEST_JSON="$manifest_json"
+manifest_file="$(mktemp)"
+trap 'rm -f "$manifest_file"' EXIT
+printf '%s' "$manifest_json" > "$manifest_file"
 
-latest_release="$(python3 - <<'PY'
-import json, os
-manifest = json.loads(os.environ["MANIFEST_JSON"])
+latest_release="$(python3 - "$manifest_file" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
 print(manifest["latest"]["release"])
 PY
 )"
 
-latest_snapshot="$(python3 - <<'PY'
-import json, os
-manifest = json.loads(os.environ["MANIFEST_JSON"])
+latest_snapshot="$(python3 - "$manifest_file" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
 print(manifest["latest"]["snapshot"])
 PY
 )"
 
 version_exists() {
   local version="$1"
-  python3 - "$version" <<'PY'
-import json, os, sys
-version = sys.argv[1]
-manifest = json.loads(os.environ["MANIFEST_JSON"])
+  python3 - "$manifest_file" "$version" <<'PY'
+import json, sys
+with open(sys.argv[1], encoding="utf-8") as handle:
+    manifest = json.load(handle)
+version = sys.argv[2]
 sys.exit(0 if any(item["id"] == version for item in manifest["versions"]) else 1)
 PY
 }

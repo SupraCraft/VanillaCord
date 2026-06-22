@@ -1,6 +1,8 @@
 name: build-and-publish
 
 on:
+  push:
+    branches: [master, main]
   release:
     types: [published]
   workflow_dispatch:
@@ -83,6 +85,7 @@ jobs:
           if-no-files-found: error
 
   release:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Determine tag

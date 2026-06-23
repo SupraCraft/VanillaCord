@@ -3,6 +3,11 @@ name: build-and-publish
 on:
   push:
     branches: [master, main]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'scripts/**'
+      - '.github/workflows/build.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -10,6 +15,10 @@ on:
       tag:
         description: "Tag to build and upload"
         required: true
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   BRIDGE_OWNER: ${{ github.repository_owner }}

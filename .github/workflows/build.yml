@@ -84,6 +84,7 @@ jobs:
           grep -F '<artifactId>vanillacord</artifactId>' pom.xml
           grep -F '<version>2.9.0-dev</version>' pom.xml
           grep -F '<groupId>io.github.supracraft.bridge</groupId>' pom.xml
+          grep -F '<project.build.outputTimestamp>2000-01-01T00:00:00Z</project.build.outputTimestamp>' pom.xml
 
       - name: Set up JDK
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -146,9 +147,10 @@ jobs:
           github.run=${GITHUB_RUN_NUMBER}
           maven.version=3.9.16
           maven.wrapper.version=3.3.4
+          build.outputTimestamp=2000-01-01T00:00:00Z
           EOF
 
-      - name: Build, test, and generate SBOM
+      - name: Build and test
         run: >-
           ./mvnw -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
@@ -156,6 +158,16 @@ jobs:
           -Dbuild.commit=${SOURCE_SHA}
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Prove reproducible canonical JAR
+        run: >-
+          bash ./scripts/verify-reproducible-build.sh
+          '${{ steps.version.outputs.VALUE }}'
+          "${BRIDGE_OWNER}"
+          "${BRIDGE_VERSION}"
+          "${SOURCE_SHA}"
+          "${SOURCE_REF}"
+          "${GITHUB_RUN_NUMBER}"
 
       - name: Verify artifact contract
         run: >-
@@ -172,6 +184,14 @@ jobs:
       - name: Generate checksums
         run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" build/vanillacord-sbom.json > SHA256SUMS
 
+      - name: Upload reproducibility diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: reproducibility-diagnostics-${{ steps.version.outputs.VALUE }}
+          path: reproducibility-diagnostics/**
+          if-no-files-found: ignore
+
       - name: Upload build evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -180,6 +200,7 @@ jobs:
             artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
+            REPRODUCIBILITY.properties
             ARTIFACT-INVENTORY.txt
             SHA256SUMS
           if-no-files-found: error
@@ -261,9 +282,10 @@ jobs:
           github.run=${GITHUB_RUN_NUMBER}
           maven.version=3.9.16
           maven.wrapper.version=3.3.4
+          build.outputTimestamp=2000-01-01T00:00:00Z
           EOF
 
-      - name: Build, test, and generate SBOM
+      - name: Build and test
         run: >-
           ./mvnw -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
@@ -271,6 +293,16 @@ jobs:
           -Dbuild.commit=${SOURCE_SHA}
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Prove reproducible release JAR
+        run: >-
+          bash ./scripts/verify-reproducible-build.sh
+          '${{ steps.version.outputs.VALUE }}'
+          "${BRIDGE_OWNER}"
+          "${BRIDGE_VERSION}"
+          "${SOURCE_SHA}"
+          "${SOURCE_REF}"
+          "${GITHUB_RUN_NUMBER}"
 
       - name: Verify artifact contract
         run: >-
@@ -295,6 +327,7 @@ jobs:
             artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
+            REPRODUCIBILITY.properties
             ARTIFACT-INVENTORY.txt
             SHA256SUMS
           fail_on_unmatched_files: true

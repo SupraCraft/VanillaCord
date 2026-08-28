@@ -8,7 +8,7 @@ This file is the execution ledger for `MODERNIZATION_PLAN.md`. The plan defines 
 
 Initial modernization baseline: `master` at `3008a186ed8535348403841dc829dee65eabe830`.
 
-Runtime invariants remain unchanged: Java 21 bytecode, generated provenance manifest, exact Bridge coordinate capture, CycloneDX SBOM, SHA-256 checksums, deterministic forwarding tests, and current-stable Minecraft patch/integrity/boot validation. Artifact identity and naming are now explicitly SupraCraft-owned while upstream lineage remains separate metadata.
+Runtime invariants remain unchanged: Java 21 bytecode, generated provenance manifest, exact Bridge coordinate capture, CycloneDX SBOM, SHA-256 checksums, deterministic forwarding tests, and current-stable Minecraft patch/integrity/boot validation. Artifact identity and naming are explicitly SupraCraft-owned while upstream lineage remains separate metadata.
 
 ## Tranche A — Maven 3 packaging/tooling baseline
 
@@ -69,22 +69,19 @@ Implemented and proven:
 
 ## Tranche C.1 — retire legacy standalone alias
 
-Branch: `modernize/retire-legacy-artifact-alias`
-Status: **validation in progress**
+PR: #21
+Status: **merged**
+Merge commit: `f6649e4c4a12c42d2e95f95963d60e0d6b7a2bee`
 
-Implemented:
+Implemented and proven:
 
-- stop creating or publishing `VanillaCord.jar`
-- require the legacy alias to be absent from build/release output
-- checksum and upload only the canonical versioned SupraCraft JAR
+- stopped creating or publishing `VanillaCord.jar`
+- CI requires the legacy alias to be absent from build/release output
+- checksums and uploads cover only the canonical versioned SupraCraft JAR
+- compatibility harness no longer defaults to the legacy filename; it discovers exactly one canonical JAR or fails on ambiguity
 - README and artifact-identity policy make the versioned filename exclusive for new builds
-- historical releases remain unchanged as historical evidence
-
-Required merge evidence:
-
-- JDK 21 build/test/SBOM and artifact contract pass
-- build artifact contains only the canonical standalone JAR plus evidence files
-- JDK 25 current-stable Minecraft patch/integrity/boot passes using the canonical JAR
+- JDK 21 artifact/provenance lane passed
+- JDK 25 current-stable Minecraft patch/integrity/boot passed using the canonical JAR
 
 ## Bridge build modernization and standalone naming
 
@@ -105,19 +102,32 @@ Merge commit: `bfbbe3f3e87114d6d1cb7623e6c0455951a233c1`
 - Actions/release downloads use explicit `supracraft-bridge-*`, `supracraft-bridge-asm-*`, and `supracraft-bridge-plugin-*` filenames
 - versioned SupraCraft SBOM plus metadata/checksums accompany standalone files
 
-## Tranche D — reproducible release builds
+## Tranche D — reproducible canonical JARs
 
-Status: next after alias retirement
+Branch: `modernize/reproducible-builds-v2`
+Status: **validation in progress**
 
-Planned:
+Implemented:
 
-- set deterministic `project.build.outputTimestamp`
-- build twice from the same source/version/exact Bridge coordinate
-- compare canonical JAR SHA-256
-- retain diagnostic inventories if hashes differ
-- gate releases only after repeatability is proven
+- fixed Maven `project.build.outputTimestamp` at canonical `2000-01-01T00:00:00Z`
+- added `scripts/verify-reproducible-build.sh`
+- reuse the normal validated build as sample one, then perform one clean rebuild as sample two
+- both builds use the same effective VanillaCord version, exact Bridge coordinate, source commit/ref/build number, Maven Wrapper, JDK lane, and archive timestamp
+- compare canonical JARs byte-for-byte and by SHA-256
+- retain entry-list and ZIP-metadata diagnostics when hashes differ
+- emit `REPRODUCIBILITY.properties` containing the proven JAR SHA and exact Bridge input
+- release path performs the same proof before publishing
 
-The reproducibility branch must be recreated from current master rather than relying on the earlier reserved branch, which predates the artifact-identity migration.
+Scope intentionally excludes byte-for-byte CycloneDX reproducibility for now. The SBOM can contain generator metadata such as serial identifiers/timestamps; its semantic contents and exact dependency coordinate remain evidence, while this tranche proves the executable JAR itself is reproducible.
+
+Required merge evidence:
+
+- normal JDK 21 build/test succeeds
+- clean rebuild produces byte-identical canonical JAR
+- artifact contract still passes on the rebuilt JAR
+- JDK 25 current-stable Minecraft patch/integrity/boot remains green
+
+After initial proof, retain the fixed timestamp permanently. Re-evaluate whether the two-build comparison belongs on every source PR or should be limited to packaging/toolchain/release lanes to conserve public Actions resources without weakening release assurance.
 
 ## Tranche E — dependency freshness
 

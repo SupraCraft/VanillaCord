@@ -50,6 +50,13 @@
     "progress_stream": "stdout",
     "failure_stream": "stderr"
   },
+  "retention": {
+    "actions_reproducibility_diagnostics_days": 7,
+    "actions_build_evidence_days": 14,
+    "actions_compatibility_report_days": 30,
+    "release_assets": "durable-historical-provenance",
+    "bridge_package_cleanup": "owned-by-SupraCraft/Bridge-retention-policy"
+  },
   "provenance": {
     "source_repository": "SupraCraft/VanillaCord",
     "upstream_repository": "ME1312/VanillaCord",
@@ -66,6 +73,7 @@
     "compatibility_policy": "COMPATIBILITY_STRATEGY.md",
     "compatibility_operations": "docs/compatibility.md",
     "diagnostics": "docs/diagnostics.md",
+    "artifact_retention": "docs/artifact-retention.md",
     "modernization_ledger": "docs/build-modernization-status.md",
     "historical_modernization_record": "MODERNIZATION_PLAN.md"
   }

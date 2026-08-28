@@ -1,16 +1,14 @@
 package vanillacord.server;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-import com.mojang.authlib.properties.Property;
 import io.netty.buffer.ByteBuf;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.List;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -19,16 +17,11 @@ final class VelocityForwardingParser {
     private final byte[][] secrets;
 
     VelocityForwardingParser(Iterable<String> secrets) {
-        int length = 0;
-        for (String ignored : secrets) {
-            ++length;
-        }
-
-        byte[][] array = this.secrets = new byte[length][];
-        int i = 0;
+        List<byte[]> encoded = new ArrayList<>();
         for (String secret : secrets) {
-            array[i++] = secret.getBytes(UTF_8);
+            encoded.add(secret.getBytes(UTF_8));
         }
+        this.secrets = encoded.toArray(byte[][]::new);
     }
 
     ForwardedPlayerData parse(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -40,16 +33,15 @@ final class VelocityForwardingParser {
         String address = readString(data);
         UUID playerId = new UUID(data.readLong(), data.readLong());
         String playerName = readString(data);
-        Multimap<String, Property> properties = ArrayListMultimap.create();
+        List<ForwardedProperty> properties = new ArrayList<>();
         for (int i = 0, length = readVarint(data); i < length; ++i) {
             String propertyName = readString(data);
-            properties.put(propertyName, new Property(
-                    propertyName,
-                    readString(data),
-                    data.readBoolean() ? readString(data) : null));
+            String propertyValue = readString(data);
+            String propertySignature = data.readBoolean() ? readString(data) : null;
+            properties.add(new ForwardedProperty(propertyName, propertyValue, propertySignature));
         }
 
-        return new ForwardedPlayerData(address, playerId, playerName, properties);
+        return new ForwardedPlayerData(address, playerId, playerName, List.copyOf(properties));
     }
 
     private boolean invalidSignature(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -98,10 +90,13 @@ final class VelocityForwardingParser {
         return out;
     }
 
+    record ForwardedProperty(String name, String value, String signature) {
+    }
+
     record ForwardedPlayerData(
             String address,
             UUID playerId,
             String playerName,
-            Multimap<String, Property> properties) {
+            List<ForwardedProperty> properties) {
     }
 }

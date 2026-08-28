@@ -15,6 +15,13 @@ on:
         description: "Space-separated best-effort legacy Minecraft versions"
         required: false
         default: "1.17.1 1.16.5 1.12.2 1.8.9 1.7.10"
+  schedule:
+    # Daily compatibility sentinel. Use an off-hour minute to reduce scheduler contention.
+    - cron: "17 4 * * *"
+
+concurrency:
+  group: minecraft-compatibility-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   BRIDGE_OWNER: ${{ github.repository_owner }}
@@ -33,6 +40,7 @@ permissions:
 jobs:
   compatibility:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -46,6 +54,16 @@ jobs:
           server-id: bridge-github
           server-username: BRIDGE_PACKAGES_USERNAME
           server-password: BRIDGE_PACKAGES_TOKEN
+
+      - name: Configure scheduled sentinel scope
+        if: github.event_name == 'schedule'
+        run: |
+          # Mojang changed; historical Minecraft versions did not. Keep the daily
+          # sentinel focused on current stable + current snapshot/RC. The full
+          # maintained/legacy matrices remain available through workflow_dispatch.
+          echo "VANILLACORD_INCLUDE_SNAPSHOT=true" >> "$GITHUB_ENV"
+          echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BEST_EFFORT_LEGACY=none" >> "$GITHUB_ENV"
 
       - name: Resolve Bridge version from GitHub Packages
         if: env.BRIDGE_VERSION == ''
@@ -84,3 +102,4 @@ jobs:
           name: minecraft-compatibility-report
           path: ${{ env.VANILLACORD_COMPAT_REPORT }}
           if-no-files-found: warn
+          retention-days: 30

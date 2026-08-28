@@ -1,5 +1,8 @@
 package vanillacord.server;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
@@ -11,11 +14,19 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VelocityHelperTest {
     private static final String SECRET = "correct-horse-battery-staple";
     private static final UUID PLAYER_ID = UUID.fromString("12345678-1234-5678-9abc-def012345678");
+
+    @Test
+    void constructsProfileAgainstCurrentAuthlibFixture() {
+        ArrayListMultimap<String, Property> properties = ArrayListMultimap.create();
+        GameProfile profile = ForwardingHelper.createProfile(PLAYER_ID, "TestPlayer", properties);
+        assertNotNull(profile);
+    }
 
     @Test
     void parsesValidForwardingPayload() throws Exception {

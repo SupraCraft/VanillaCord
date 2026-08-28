@@ -2,47 +2,47 @@
 
 VanillaCord and Bridge use independent versioning. VanillaCord never shares Bridge's version number; every build records the exact canonical Bridge coordinate it consumed.
 
-## Canonical Maven identity
+## Canonical identity
 
 New artifacts from this fork use:
 
-`io.github.supracraft.vanillacord:vanillacord:<version>`
+```text
+io.github.supracraft.vanillacord:vanillacord:<version>
+```
 
-The historical `net.ME1312:VanillaCord` coordinate identifies upstream/history and is not used for new SupraCraft artifacts. Java packages remain `vanillacord.*` because they are already neutral API/runtime names; changing them would add compatibility churn and impede upstream contribution without improving artifact ownership.
+The historical `net.ME1312:VanillaCord` coordinate identifies upstream/history and is not used for new SupraCraft artifacts. Java packages remain `vanillacord.*` because they are already neutral API/runtime names.
+
+The canonical standalone JAR is:
+
+```text
+supracraft-vanillacord-<version>.jar
+```
+
+`VanillaCord.jar` is historical only. Current CI and releases MUST NOT emit it. Historical releases may retain old filenames as immutable historical evidence.
 
 ## Source and development versions
 
-The checked-in POM is the single source of truth for the next release line and carries `X.Y.Z-dev`. Following upstream/fork release `v2.8`, the next normalized release line is `2.9.0`, so the checked-in development version is `2.9.0-dev`.
+The checked-in POM is the source of truth for the next release line and carries `X.Y.Z-dev`. The current source line is `2.9.0-dev`.
 
 Ordinary CI appends the GitHub Actions run number:
 
-`X.Y.Z-dev.<run-number>`
+```text
+X.Y.Z-dev.<run-number>
+```
 
-Example: `2.9.0-dev.81`.
-
-These are immutable ordinary Maven versions. `SNAPSHOT` is intentionally not used. Earlier forms such as `2.9-SNAPSHOT.62` did not end in `-SNAPSHOT`, so Maven did not treat them as snapshots; the word added ambiguity without providing snapshot semantics.
+These are immutable ordinary Maven versions. `SNAPSHOT` is intentionally not used. Forms such as `2.9-SNAPSHOT.62` did not end in `-SNAPSHOT`, so Maven did not treat them as snapshots; the terminology was misleading and is retired.
 
 ## Release candidates and releases
 
-Release candidates use `X.Y.Z-rc.N`. Stable releases use `X.Y.Z` and tags use `vX.Y.Z` going forward. Historical `v2.1` through `v2.8` tags remain valid history and are not rewritten.
+Release candidates use `X.Y.Z-rc.N`. Stable releases use `X.Y.Z`; tags use `vX.Y.Z`. Historical tags remain historical and are not rewritten.
 
-A release build strips the leading `v` from its tag. After a stable release, the checked-in POM advances to the next intended `X.Y.Z-dev` line.
+A release build derives its project version from the explicit release/tag input. After a stable release, the checked-in POM advances deliberately to the next intended `X.Y.Z-dev` line.
 
 ## Bridge relationship
 
-Canonical Bridge coordinates use `io.github.supracraft.bridge`. Normal development CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build to expose integration failures early. The resulting exact coordinate is recorded in the manifest, SBOM, and build metadata.
+Canonical Bridge coordinates use `io.github.supracraft.bridge`. Development integration CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build to expose integration failures early. Every resulting VanillaCord artifact records the exact coordinate consumed.
 
-Release builds do not float automatically. Unless an explicit `bridge_version` is provided, they use the exact Bridge version pinned in the source POM. This makes the release dependency input reconstructable without relying on repository `latest` metadata.
-
-## Artifact filenames
-
-The canonical standalone JAR is versioned and producer-qualified:
-
-`supracraft-vanillacord-<version>.jar`
-
-During migration, CI and releases also emit `VanillaCord.jar` as a temporary byte-identical compatibility alias for existing deployments. The alias is copied from the canonical artifact after the build; it is never compiled independently. New automation must consume the canonical filename or Maven coordinate.
-
-The compatibility alias can be removed after known deployment consumers have migrated; its removal should be a deliberate compatibility change, not an incidental packaging cleanup.
+Release and reproducibility work must use an exact immutable Bridge version. Do not rely on mutable `latest` metadata as a release input.
 
 ## Embedded provenance
 
@@ -59,13 +59,22 @@ Every canonical JAR records:
 - `Bridge-Version`
 - `Bridge-Coordinate: io.github.supracraft.bridge:bridge:<exact-version>`
 
-CI additionally produces:
+CI additionally emits build evidence including:
 
-- `vanillacord-sbom.json` — CycloneDX dependency inventory
-- `BUILD-METADATA.properties` — human/machine-readable identity and build inputs
-- `ARTIFACT-INVENTORY.txt` — sorted JAR inventory
-- `SHA256SUMS` — canonical JAR, compatibility alias, and SBOM hashes
+- CycloneDX JSON SBOM
+- `BUILD-METADATA.properties`
+- `ARTIFACT-INVENTORY.txt`
+- `REPRODUCIBILITY.properties`
+- `SHA256SUMS`
+
+The checksum set covers the current canonical artifact/evidence set; it does not include the retired `VanillaCord.jar` alias.
 
 ## Reproducibility
 
-Version strings identify release/development state, not source provenance. The Git commit, exact Bridge coordinate, Maven/wrapper versions, SBOM, and checksums carry reconstruction evidence separately. Build timestamps remain excluded from the embedded manifest; deterministic archive timestamps are handled by the separate reproducible-build modernization tranche.
+Version strings identify release/development state, not source provenance. Git commit/ref/run, exact Bridge coordinate, wrapper/Maven inputs, SBOM, metadata, and checksums carry reconstruction evidence separately.
+
+The build uses a fixed archive output timestamp and proves the canonical VanillaCord JAR byte-for-byte reproducible by comparing a validated build with a clean rebuild using the same effective inputs. Build timestamps remain excluded from the embedded manifest.
+
+## Policy for automation
+
+Automation must derive behavior from the checked-in POM, workflow, and `PROJECT_CONTRACT.json`, not from examples containing old CI run numbers. If documentation and executable build logic disagree, treat that as a documentation defect and fix the documentation through normal review rather than silently guessing.

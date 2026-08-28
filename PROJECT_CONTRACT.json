@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "SupraCraft/VanillaCord",
+  "upstream_repository": "ME1312/VanillaCord",
+  "role": "patch vanilla Minecraft server jars for proxy forwarding",
+  "source_version": "2.9.0-dev",
+  "artifact": {
+    "maven": "io.github.supracraft.vanillacord:vanillacord:<version>",
+    "standalone": "supracraft-vanillacord-<version>.jar",
+    "historical_aliases_forbidden_in_current_output": ["VanillaCord.jar"]
+  },
+  "versioning": {
+    "development_source": "X.Y.Z-dev",
+    "development_ci": "X.Y.Z-dev.<github-run-number>",
+    "release_candidate": "X.Y.Z-rc.N",
+    "release": "X.Y.Z",
+    "release_tag": "vX.Y.Z",
+    "maven_snapshot_semantics": false
+  },
+  "toolchain": {
+    "maven_wrapper": "3.3.4",
+    "maven": "3.9.16",
+    "java_bytecode_release": 21,
+    "current_minecraft_probe_jdk": 25
+  },
+  "bridge": {
+    "repository": "SupraCraft/Bridge",
+    "group": "io.github.supracraft.bridge",
+    "versioning": "independent",
+    "release_input_policy": "exact immutable coordinate"
+  },
+  "validation": {
+    "build": "./mvnw -B verify",
+    "artifact_contract": "scripts/verify-artifact-contract.sh",
+    "reproducibility": "scripts/verify-reproducible-build.sh",
+    "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
+    "compatibility_tiers": {
+      "current-stable": "blocking",
+      "required-supported": "blocking-when-requested",
+      "current-development": "advisory",
+      "best-effort": "advisory"
+    }
+  },
+  "provenance": {
+    "source_repository": "SupraCraft/VanillaCord",
+    "upstream_repository": "ME1312/VanillaCord",
+    "records_exact_bridge_coordinate": true,
+    "records_git_commit_ref_run": true,
+    "fixed_archive_output_timestamp": true
+  },
+  "documentation": {
+    "human_entrypoint": "README.md",
+    "agent_instructions": "AGENTS.md",
+    "artifact_identity": "ARTIFACT_IDENTITY.md",
+    "versioning": "VERSIONING.md",
+    "compatibility_policy": "COMPATIBILITY_STRATEGY.md",
+    "compatibility_operations": "docs/compatibility.md",
+    "modernization_ledger": "docs/build-modernization-status.md",
+    "historical_modernization_record": "MODERNIZATION_PLAN.md"
+  }
+}

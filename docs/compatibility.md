@@ -1,79 +1,109 @@
-# VanillaCord Compatibility
+# VanillaCord compatibility operations
 
-VanillaCord compatibility is tested by patching real Mojang server jars with the
-same script in every environment:
+This guide explains how humans, automation, and agents should run the compatibility sentinel. Policy rationale lives in `../COMPATIBILITY_STRATEGY.md`; this file describes the executable interface.
+
+## Canonical probe
+
+The compatibility implementation is:
 
 ```sh
-scripts/check-minecraft-compatibility.sh artifacts/VanillaCord.jar
+scripts/check-minecraft-compatibility.sh
 ```
 
-The GitHub Actions workflow, local PowerShell wrapper, Docker wrapper, and any
-other CI/CD system should call that script rather than duplicating matrix logic.
+If no JAR path is supplied, the script requires exactly one canonical artifact matching:
 
-## Tested Range
+```text
+artifacts/supracraft-vanillacord-*.jar
+```
 
-The default matrix is defined by environment variables in
-`scripts/check-minecraft-compatibility.sh`.
+An explicit canonical JAR path may also be passed as the first argument. Do not use the retired `artifacts/VanillaCord.jar` name.
 
-| Tier | Versions | Blocks release |
-| --- | --- | --- |
-| Current stable | Latest Mojang stable release from `version_manifest_v2.json` | yes |
-| Current snapshot/RC | Latest Mojang snapshot from `version_manifest_v2.json`, when enabled | yes |
-| Required supported | `1.21.11 1.20.6 1.20.4 1.19.4 1.18.2` | yes |
-| Best-effort legacy | `1.17.1 1.16.5 1.12.2 1.8.9 1.7.10` | no |
+## Tier policy
 
-Override the matrix with:
+| Tier | Source | Routine policy | Exit-code effect |
+| --- | --- | --- | --- |
+| `current-stable` | latest Mojang stable from `version_manifest_v2.json` | patch + integrity; boot when enabled | blocking |
+| `current-development` | latest snapshot/RC/pre-release when enabled | patch + integrity | advisory |
+| `required-supported` | explicit maintained versions | when requested | blocking |
+| `best-effort` | explicit historical versions | when requested | advisory |
+
+A development snapshot failure is early-warning evidence. It does not independently fail the command when all blocking targets pass.
+
+Default maintained fixtures in the script are currently:
+
+```text
+required-supported: 1.21.11 1.20.6 1.20.4 1.19.4 1.18.2
+best-effort:        1.17.1 1.16.5 1.12.2 1.8.9 1.7.10
+```
+
+These defaults are executable configuration, not a promise that every historical target receives routine validation.
+
+## Environment controls
 
 ```sh
 VANILLACORD_INCLUDE_SNAPSHOT=false
 VANILLACORD_REQUIRED_SUPPORTED="1.21.11 1.20.6"
 VANILLACORD_BEST_EFFORT_LEGACY="1.16.5 1.12.2"
-VANILLACORD_COMPAT_REPORT=docs/minecraft-compatibility-report.md
+VANILLACORD_BOOT_SMOKE=true
+VANILLACORD_BOOT_TIMEOUT_SECONDS=120
+VANILLACORD_COMPAT_REPORT=/tmp/vanillacord-compatibility.md
 ```
 
-Set `VANILLACORD_REQUIRED_SUPPORTED` or `VANILLACORD_BEST_EFFORT_LEGACY` to an
-empty string, `none`, or `-` to clear that tier for a smoke run.
+Set either version-list variable to an empty string, `none`, or `-` to clear that tier for a focused smoke run.
 
-## Reports
+## Build before probing
 
-The generated report path defaults to:
+Use the pinned Maven Wrapper, not a system Maven:
 
-```text
-docs/minecraft-compatibility-report.md
+```sh
+export BRIDGE_OWNER="${BRIDGE_OWNER:-SupraCraft}"
+export BRIDGE_VERSION="${BRIDGE_VERSION:-$(./scripts/resolve-bridge-version.sh)}"
+./mvnw -B verify -Dbridge.version="$BRIDGE_VERSION"
 ```
 
-GitHub Actions uploads that file as an artifact and appends it to the workflow
-summary. Local runs write the same file, so a maintainer can commit a generated
-report when they want repository documentation to reflect a specific validation
-run.
+CI records the exact resolved Bridge coordinate. For reproducibility/release investigation, set `BRIDGE_VERSION` to the exact previously recorded version instead of resolving again.
 
-## Local Run
+GitHub Packages access normally requires `GITHUB_TOKEN`/`GITHUB_ACTOR` credentials with package-read access.
 
-On Windows, use the wrapper. `-UseDocker` is the most reproducible path because
-it supplies JDK 25, Maven, Python, and Bash inside the container:
+## Local compatibility run
+
+On a Unix-like environment with the required Java/Python/Bash tools available:
+
+```sh
+export VANILLACORD_BOOT_SMOKE=true
+scripts/check-minecraft-compatibility.sh
+```
+
+On Windows, the repository PowerShell wrapper may be used. The Docker mode supplies the compatibility runtime environment while the repository build itself remains wrapper-driven:
 
 ```powershell
 $env:GITHUB_TOKEN = (gh auth token).Trim()
 .\scripts\Invoke-CompatibilityProbe.ps1 -UseDocker
 ```
 
-For a lower-cost smoke test:
+For a cheap current-stable-only smoke:
 
 ```powershell
 $env:GITHUB_TOKEN = (gh auth token).Trim()
 .\scripts\Invoke-CompatibilityProbe.ps1 -UseDocker -SkipSnapshot -RequiredSupported "" -BestEffortLegacy ""
 ```
 
-For a lower-cost GitHub Actions dispatch, set `include_snapshot=false` and set
-both version-list inputs to `none`.
+## GitHub Actions behavior
 
-## Other CI/CD Systems
+`.github/workflows/compatibility.yml` provides three operating modes:
 
-Set `GITHUB_TOKEN` with `read:packages`, build `artifacts/VanillaCord.jar`, then
-run:
+- pull-request validation: narrowly proves current stable for compatibility-harness changes;
+- scheduled sentinel: current stable is blocking and development Minecraft is advisory;
+- manual dispatch: permits explicit maintained/legacy version sets and boot controls.
 
-```sh
-export BRIDGE_OWNER="${BRIDGE_OWNER:-mark-e-deyoung}"
-export VANILLACORD_COMPAT_REPORT="${VANILLACORD_COMPAT_REPORT:-docs/minecraft-compatibility-report.md}"
-scripts/check-minecraft-compatibility.sh artifacts/VanillaCord.jar
-```
+The workflow report is appended to the job summary and uploaded as a workflow artifact. Treat that workflow evidence as the authoritative current run result.
+
+## Repository report file
+
+`docs/minecraft-compatibility-report.md` is not a continuously updated status page. It is a repository-held note explaining where authoritative current compatibility evidence lives. Probe runs may write a generated report to another path via `VANILLACORD_COMPAT_REPORT`; do not commit transient output as though it were evergreen project documentation.
+
+## Automation contract
+
+Automation should parse the generated report's `Tier`, `Version`, `Policy`, and `Result` columns rather than infer policy from version names. It should also use the process exit code for the aggregate blocking result.
+
+Do not duplicate Minecraft-version resolution or tier semantics in another script unless a concrete integration requires it; call the canonical probe instead.

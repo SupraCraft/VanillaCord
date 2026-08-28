@@ -1,7 +1,10 @@
 package vanillacord.server;
 
 import bridge.Invocation;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.Channel;
@@ -65,8 +68,13 @@ public class VelocityHelper extends ForwardingHelper {
 
             VelocityForwardingParser.ForwardedPlayerData forwarded = parser.parse(data);
             new Invocation(PlayerConnection.class).ofMethod("setAddress").with(connection).with(forwarded.address()).invoke();
+
+            Multimap<String, Property> properties = ArrayListMultimap.create();
+            for (VelocityForwardingParser.ForwardedProperty property : forwarded.properties()) {
+                properties.put(property.name(), new Property(property.name(), property.value(), property.signature()));
+            }
             GameProfile profile = ForwardingHelper.createProfile(
-                    forwarded.playerId(), forwarded.playerName(), forwarded.properties());
+                    forwarded.playerId(), forwarded.playerName(), properties);
             channel.attr(PROFILE_KEY).set(profile);
 
             try {

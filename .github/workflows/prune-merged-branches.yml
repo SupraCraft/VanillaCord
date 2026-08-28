@@ -1,0 +1,37 @@
+name: prune-merged-branches
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'scripts/prune-merged-branches.sh'
+      - '.github/workflows/prune-merged-branches.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'scripts/prune-merged-branches.sh'
+      - '.github/workflows/prune-merged-branches.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 0
+
+      - name: Dry-run retired branch proof
+        if: github.event_name == 'pull_request'
+        run: bash ./scripts/prune-merged-branches.sh --dry-run master
+
+      - name: Delete only proven retired branches
+        if: github.event_name != 'pull_request'
+        run: bash ./scripts/prune-merged-branches.sh --apply master

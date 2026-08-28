@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SupraCraft VanillaCord — proxy forwarding for vanilla Minecraft servers</title>
+  <meta name="description" content="SupraCraft-maintained VanillaCord fork: patches vanilla Minecraft servers for BungeeCord, BungeeGuard, and Velocity forwarding.">
+  <link rel="canonical" href="https://supracraft.github.io/VanillaCord/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SupraCraft VanillaCord">
+  <meta property="og:description" content="Patch vanilla Minecraft servers for BungeeCord, BungeeGuard, and Velocity proxy forwarding.">
+  <meta property="og:url" content="https://supracraft.github.io/VanillaCord/">
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; line-height: 1.55; }
+    main { max-width: 900px; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+    h1 { font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.05; margin-bottom: .75rem; }
+    h2 { margin-top: 2.25rem; }
+    .lede { font-size: 1.2rem; max-width: 760px; }
+    .notice, .card { border: 1px solid color-mix(in srgb, currentColor 20%, transparent); border-radius: .8rem; padding: 1rem 1.1rem; }
+    .notice { margin: 1.5rem 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+    a { color: inherit; }
+    .button { display: inline-block; margin: .35rem .45rem .35rem 0; padding: .55rem .8rem; border: 1px solid currentColor; border-radius: .55rem; text-decoration: none; }
+    code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>VanillaCord</h1>
+  <p class="lede">Patch vanilla Minecraft server JARs so they can safely sit behind BungeeCord, BungeeGuard, or Velocity proxies with forwarded player identity.</p>
+
+  <div class="notice">
+    <strong>SupraCraft-maintained fork.</strong> This repository is derived from <a href="https://github.com/ME1312/VanillaCord">ME1312/VanillaCord</a>. Upstream authorship and license history are preserved; new SupraCraft artifacts use SupraCraft-owned identity and provenance.
+  </div>
+
+  <p>
+    <a class="button" href="https://github.com/SupraCraft/VanillaCord">Source</a>
+    <a class="button" href="https://github.com/SupraCraft/VanillaCord/releases">Releases</a>
+    <a class="button" href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/compatibility.md">Compatibility operations</a>
+    <a class="button" href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/minecraft-compatibility-report.md">Latest recorded compatibility report</a>
+  </p>
+
+  <h2>What it does</h2>
+  <div class="grid">
+    <div class="card"><strong>Vanilla backends</strong><br>Downloads Mojang server JARs and writes patched servers under <code>out/&lt;version&gt;.jar</code>.</div>
+    <div class="card"><strong>Proxy forwarding</strong><br>Supports Velocity modern forwarding and the historical BungeeCord/BungeeGuard paths.</div>
+    <div class="card"><strong>Validated artifacts</strong><br>Builds verify reproducibility, artifact identity, provenance, and compatibility boundaries.</div>
+  </div>
+
+  <h2>Quick start</h2>
+  <p>Download an exact release from GitHub Releases and run:</p>
+  <p><code>java -jar supracraft-vanillacord-&lt;version&gt;.jar &lt;minecraft-versions...&gt;</code></p>
+  <p>The patcher itself emits Java 21 bytecode. The Java runtime required by a patched server is determined by the selected Minecraft release.</p>
+
+  <h2>Scope and safety</h2>
+  <p>VanillaCord is specifically for vanilla Minecraft backend servers. Servers with their own native proxy-forwarding support are outside this repository’s scope. Forwarding protects proxy-supplied identity data, but backend server ports should still be firewalled so clients cannot bypass the proxy.</p>
+
+  <h2>Related project</h2>
+  <p>The patcher consumes <a href="https://github.com/SupraCraft/Bridge">SupraCraft Bridge</a> as an independently versioned bytecode transformation dependency. Release builds record the exact immutable Bridge coordinate they used.</p>
+</main>
+</body>
+</html>

@@ -13,7 +13,7 @@ java -jar supracraft-vanillacord-<version>.jar <minecraft-versions...>
 
 VanillaCord is for **vanilla Minecraft backend servers**. It downloads the Mojang server JAR for each requested version, patches it, and writes the patched server to `out/<version>.jar`.
 
-Do not install VanillaCord on Paper. Paper has native Velocity forwarding support and should use Paper's own proxy configuration.
+Servers that already provide their own native proxy-forwarding implementation are outside this repository's scope; use that server's own documentation instead.
 
 This repository is the SupraCraft-maintained fork of `ME1312/VanillaCord`. Upstream authorship/license history remain intact, but new artifacts identify SupraCraft as their producer.
 
@@ -108,20 +108,6 @@ Velocity forwarding protects forwarded identity data; still firewall/restrict ba
 ## BungeeCord / BungeeGuard
 
 VanillaCord also supports the historical BungeeCord and BungeeGuard forwarding paths. Preserve their existing configuration semantics when changing forwarding code, and add focused regression tests for protocol/handshake edge cases. `docs/bot-disconnection-fix.md` is a historical incident record for one BungeeGuard failure mode, not current deployment instructions.
-
-## Paper backends
-
-Paper does not use VanillaCord. Configure Paper's native Velocity support instead:
-
-```yaml
-proxies:
-  velocity:
-    enabled: true
-    online-mode: true
-    secret: "replace-with-a-long-random-secret"
-```
-
-Keep direct backend access restricted just as for a patched vanilla backend.
 
 ## Building
 

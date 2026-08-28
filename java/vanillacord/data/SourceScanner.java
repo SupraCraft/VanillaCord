@@ -44,13 +44,13 @@ public class SourceScanner extends HierarchyScanner {
                 if (value instanceof String) {
                     final String text = (String) value;
                     if ("Server console handler".equals(text)) {
+                        file.sources.startup = selectUnique("startup", file.sources.startup, data);
                         System.out.print("Found the dedicated server: ");
                         System.out.println(SourceScanner.super.name);
-                        file.sources.startup = data;
                     } else if (isLoginHello(text)) {
+                        file.sources.login = selectUnique("login", file.sources.login, data);
                         System.out.print("Found the login listener: ");
                         System.out.println(SourceScanner.super.name);
-                        file.sources.login = data;
                     } else if (hasTID && isPayloadTooLarge(text)) {
                         System.out.print("Found a login extension packet: ");
                         System.out.println(SourceScanner.super.name);
@@ -60,14 +60,22 @@ public class SourceScanner extends HierarchyScanner {
                             file.sources.receive = data;
                         }
                     } else if (isHandshakeDisconnect(text)) {
+                        file.sources.handshake = selectUnique("handshake", file.sources.handshake, data);
                         System.out.print("Found the handshake listener: ");
                         System.out.println(SourceScanner.super.name);
-                        file.sources.handshake = data;
                     }
                 }
                 super.visitLdcInsn(value);
             }
         };
+    }
+
+    private static MethodData selectUnique(String hook, MethodData current, MethodData candidate) {
+        if (current == null || current == candidate) {
+            return candidate;
+        }
+        throw new IllegalStateException("Ambiguous " + hook + " hook candidates: "
+                + current.name + current.descriptor + " and " + candidate.name + candidate.descriptor);
     }
 
     private static boolean isLoginHello(String text) {

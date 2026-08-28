@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "SupraCraft/VanillaCord",
+  "description": "SupraCraft-maintained VanillaCord fork: patches vanilla Minecraft servers for BungeeCord, BungeeGuard, and Velocity forwarding.",
+  "homepage": "https://supracraft.github.io/VanillaCord/",
+  "topics": [
+    "bungeecord",
+    "bungeeguard",
+    "ip-forwarding",
+    "java",
+    "minecraft",
+    "minecraft-server",
+    "patcher",
+    "proxy",
+    "server",
+    "vanilla",
+    "velocity"
+  ],
+  "pages": {
+    "expected_enabled": true,
+    "url": "https://supracraft.github.io/VanillaCord/",
+    "source": "branch",
+    "branch": "master",
+    "content_root": "docs/"
+  },
+  "upstream_repository": "ME1312/VanillaCord"
+}

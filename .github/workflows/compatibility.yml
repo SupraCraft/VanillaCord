@@ -1,5 +1,6 @@
 name: minecraft-compatibility
 
+# Observation drill: comment-only change used to exercise the focused PR sentinel.
 on:
   pull_request:
     branches: [master, main]

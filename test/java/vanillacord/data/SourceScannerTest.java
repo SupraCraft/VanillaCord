@@ -58,7 +58,33 @@ class SourceScannerTest {
     }
 
     @Test
-    void rejectsAmbiguousLoginMethods() {
+    void strongHelloSignalReplacesWeakFallback() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = probeClass();
+        addStringLdcMethod(cw, "weak", "Unexpected login packet");
+        addStringLdcMethod(cw, "strong", "Unexpected hello packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertEquals("strong", file.sources.login.name);
+    }
+
+    @Test
+    void weakFallbackCannotOverwriteStrongHelloSignal() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = probeClass();
+        addStringLdcMethod(cw, "strong", "Received hello twice");
+        addStringLdcMethod(cw, "weak", "Unexpected login packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertEquals("strong", file.sources.login.name);
+    }
+
+    @Test
+    void rejectsAmbiguousStrongLoginMethods() {
         StubPackage file = new StubPackage();
         ClassWriter cw = probeClass();
         addStringLdcMethod(cw, "firstHello", "Unexpected hello packet");
@@ -71,7 +97,20 @@ class SourceScannerTest {
     }
 
     @Test
-    void allowsMultipleSignalsInSameLoginMethod() {
+    void rejectsAmbiguousWeakLoginMethods() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = probeClass();
+        addStringLdcMethod(cw, "firstFallback", "Unexpected login packet");
+        addStringLdcMethod(cw, "secondFallback", "Unexpected login request");
+        cw.visitEnd();
+
+        IllegalStateException error = assertThrows(IllegalStateException.class,
+                () -> scan(file, cw.toByteArray()));
+        assertEquals("Ambiguous login hook candidates: firstFallback()V and secondFallback()V", error.getMessage());
+    }
+
+    @Test
+    void allowsMultipleStrongSignalsInSameLoginMethod() {
         StubPackage file = new StubPackage();
         ClassWriter cw = probeClass();
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "hello", "()V", null, null);
@@ -87,7 +126,6 @@ class SourceScannerTest {
 
         scan(file, cw.toByteArray());
 
-        assertNotNull(file.sources.login);
         assertEquals("hello", file.sources.login.name);
     }
 

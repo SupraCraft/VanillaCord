@@ -1,0 +1,7 @@
+# branch	expected-head-sha	evidence
+docs/modernization-plan	94849638f42f327b9f05dc7d62362504d3ca0f1d	PR #16 closed unmerged as superseded by clean documentation branch
+hardening/source-scanner-ambiguity	122eea712219c2ed555b8f6978f825ec45e23eab	PR #9 closed unmerged as superseded by clean current-master replacement
+hardening/source-scanner-signals-v2	73fd26b75b9267849b1a0508d27305ac25743a73	PR #11 closed unmerged after SourceScanner hardening was already merged
+observe/compatibility-sentinel-drill	e137d691f985c86a2e45eaeae4178c2a59a199ae	PR #12 explicitly closed unmerged as a completed disposable observation drill
+test/velocity-forwarding-boundary	8be8fb538b84b5db986d0b5a1cf8ac75243fd646	PR #6 implementation was merged; branch was then advanced only by a follow-up documentation commit recording that boundary
+maintenance/retire-stale-refs	aa90c3f6fd985137f2aaf88c4c366d774dfc093f	PR #34 closed unmerged after master advanced; superseded by a clean current-master retirement branch

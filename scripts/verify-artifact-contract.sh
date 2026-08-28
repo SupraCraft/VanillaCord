@@ -23,6 +23,7 @@ require_entry 'vanillacord/Downloader.class'
 require_entry 'com/alibaba/fastjson2/JSON.class'
 require_entry 'org/objectweb/asm/ClassReader.class'
 require_entry 'LICENSE'
+require_entry 'META-INF/supracraft/vanillacord/icon.svg'
 forbid_entry 'com/mojang/authlib/GameProfile.class'
 forbid_entry 'io/netty/buffer/ByteBuf.class'
 

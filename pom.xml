@@ -47,7 +47,7 @@
 
     <dependencies>
         <dependency><groupId>com.alibaba.fastjson2</groupId><artifactId>fastjson2</artifactId><version>2.0.64</version><scope>compile</scope></dependency>
-        <dependency><groupId>com.mojang</groupId><artifactId>authlib</artifactId><version>6.0.53</version><scope>provided</scope></dependency>
+        <dependency><groupId>com.mojang</groupId><artifactId>authlib</artifactId><version>9.0.75</version><scope>provided</scope></dependency>
         <dependency><groupId>io.netty</groupId><artifactId>netty-all</artifactId><version>4.1.107.Final</version><scope>provided</scope></dependency>
         <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><version>9.10.1</version><scope>compile</scope></dependency>
         <dependency><groupId>io.github.supracraft.bridge</groupId><artifactId>bridge</artifactId><version>${bridge.version}</version><scope>provided</scope></dependency>

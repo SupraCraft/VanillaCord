@@ -1,11 +1,12 @@
 package vanillacord.server;
 
+import com.google.common.collect.Multimap;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
-import com.google.common.collect.Multimap;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 public abstract class ForwardingHelper {
@@ -29,21 +30,37 @@ public abstract class ForwardingHelper {
     public abstract GameProfile injectProfile(Object connection, String username);
 
     /**
-     * Creates a GameProfile with the given properties pre-populated.
-     * Works with both old authlib (mutable PropertyMap via getProperties().putAll)
-     * and new authlib (record-based, requires 3-arg constructor via reflection).
+     * Creates a GameProfile with the given properties pre-populated without
+     * linking VanillaCord directly to one authlib API generation.
+     *
+     * Modern authlib exposes a three-argument GameProfile constructor carrying
+     * a PropertyMap. Historical authlib instead exposes a two-argument
+     * constructor plus a mutable getProperties() map. Both shapes are resolved
+     * reflectively so compiling against the current Minecraft authlib does not
+     * remove support for older server runtimes.
      */
-    @SuppressWarnings("unchecked")
     public static GameProfile createProfile(UUID id, String name, Multimap<String, Property> properties) {
+        ReflectiveOperationException modernFailure;
         try {
-            Constructor<PropertyMap> pmCtor = PropertyMap.class.getConstructor(Multimap.class);
-            Constructor<GameProfile> gpCtor = GameProfile.class.getConstructor(
+            Constructor<PropertyMap> propertyMapConstructor = PropertyMap.class.getConstructor(Multimap.class);
+            Constructor<GameProfile> profileConstructor = GameProfile.class.getConstructor(
                     UUID.class, String.class, PropertyMap.class);
-            return gpCtor.newInstance(id, name, pmCtor.newInstance(properties));
+            return profileConstructor.newInstance(id, name, propertyMapConstructor.newInstance(properties));
         } catch (ReflectiveOperationException e) {
-            GameProfile profile = new GameProfile(id, name);
-            profile.getProperties().putAll(properties);
+            modernFailure = e;
+        }
+
+        try {
+            Constructor<GameProfile> profileConstructor = GameProfile.class.getConstructor(UUID.class, String.class);
+            GameProfile profile = profileConstructor.newInstance(id, name);
+            Method getProperties = GameProfile.class.getMethod("getProperties");
+            Object propertyMap = getProperties.invoke(profile);
+            Method putAll = propertyMap.getClass().getMethod("putAll", Multimap.class);
+            putAll.invoke(propertyMap, properties);
             return profile;
+        } catch (ReflectiveOperationException historicalFailure) {
+            modernFailure.addSuppressed(historicalFailure);
+            throw new IllegalStateException("Unsupported authlib GameProfile API", modernFailure);
         }
     }
 }

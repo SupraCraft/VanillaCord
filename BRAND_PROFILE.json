@@ -1,12 +1,12 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "organization_brand": "SupraCraft",
   "brand_contract_version": "0.1.0-candidate",
   "governance_source": "SupraCraft/brand-governance-private:profiles/projects/VanillaCord.json",
   "repository": "SupraCraft/VanillaCord",
   "project": "VanillaCord",
   "families": ["minecraft-server", "upstream-sensitive-fork"],
-  "status": "candidate",
+  "status": "adopted",
   "snapshot_policy": "vendored-reviewed-snapshot-no-private-runtime-dependency",
   "identity": {
     "metaphor": "a warm vanilla-cream cord connecting a plain vanilla server endpoint to a proxy/network endpoint",
@@ -22,5 +22,14 @@
   "packaged_resources": {
     "jar_icon": "META-INF/supracraft/vanillacord/icon.svg",
     "source_path": "resources/META-INF/supracraft/vanillacord/icon.svg"
+  },
+  "verification": {
+    "pilot_pr": 41,
+    "pilot_merge_commit": "422e81bc45dba0aea8f0072ff36ed0f46c409710",
+    "project_ci": "passed",
+    "minecraft_compatibility_ci": "passed",
+    "packaged_icon_validation": "passed",
+    "pages_deployment": "blocked-pending-repository-pages-enablement",
+    "repository_admin_metadata": "pending-canonical-apply"
   }
 }

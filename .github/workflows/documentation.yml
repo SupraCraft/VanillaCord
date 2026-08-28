@@ -1,0 +1,49 @@
+name: documentation-contract
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'PROJECT_CONTRACT.json'
+      - 'VERSIONING.md'
+      - 'ARTIFACT_IDENTITY.md'
+      - 'COMPATIBILITY_STRATEGY.md'
+      - 'MODERNIZATION_PLAN.md'
+      - 'docs/**'
+      - 'scripts/check-documentation-contract.sh'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/documentation.yml'
+      - 'pom.xml'
+      - '.mvn/wrapper/**'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'README.md'
+      - 'AGENTS.md'
+      - 'PROJECT_CONTRACT.json'
+      - 'VERSIONING.md'
+      - 'ARTIFACT_IDENTITY.md'
+      - 'COMPATIBILITY_STRATEGY.md'
+      - 'MODERNIZATION_PLAN.md'
+      - 'docs/**'
+      - 'scripts/check-documentation-contract.sh'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/documentation.yml'
+      - 'pom.xml'
+      - '.mvn/wrapper/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - name: Validate documentation contract
+        run: bash ./scripts/check-documentation-contract.sh

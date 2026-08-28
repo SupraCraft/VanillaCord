@@ -34,6 +34,7 @@
     "artifact_contract": "scripts/verify-artifact-contract.sh",
     "reproducibility": "scripts/verify-reproducible-build.sh",
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
+    "documentation_contract": "scripts/check-documentation-contract.sh",
     "compatibility_tiers": {
       "current-stable": "blocking",
       "required-supported": "blocking-when-requested",
@@ -51,6 +52,7 @@
   "documentation": {
     "human_entrypoint": "README.md",
     "agent_instructions": "AGENTS.md",
+    "policy": "docs/DOCUMENTATION_POLICY.md",
     "artifact_identity": "ARTIFACT_IDENTITY.md",
     "versioning": "VERSIONING.md",
     "compatibility_policy": "COMPATIBILITY_STRATEGY.md",

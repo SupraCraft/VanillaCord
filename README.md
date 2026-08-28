@@ -1,30 +1,35 @@
 # VanillaCord
-[![Build Status](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml/badge.svg)](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml)
-[![Release Version](https://img.shields.io/github/release/SupraCraft/VanillaCord/all.svg)](https://github.com/SupraCraft/VanillaCord/releases)<br>
 
-VanillaCord downloads and patches a vanilla Minecraft server so proxies can connect to it with your choice of
-[BungeeCord](https://www.spigotmc.org/wiki/bungeecord-ip-forwarding/),
-[BungeeGuard](https://www.spigotmc.org/resources/bungeeguard.79601/), or
-[Velocity](https://docs.papermc.io/velocity/security#velocity-modern-forwarding) IP forwarding enabled.
+[![Build Status](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml/badge.svg)](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml)
+[![Release Version](https://img.shields.io/github/release/SupraCraft/VanillaCord/all.svg)](https://github.com/SupraCraft/VanillaCord/releases)
+
+VanillaCord downloads and patches a vanilla Minecraft server so proxies can connect using BungeeCord, BungeeGuard, or Velocity forwarding.
 
 ```sh
 java -jar supracraft-vanillacord-<version>.jar <minecraft-versions...>
 ```
 
-## What VanillaCord does
-VanillaCord is for vanilla Minecraft backend servers. It downloads the Mojang
-server jar for each requested version, patches the jar, and writes the patched
-server to `out/<version>.jar`. The patched server creates and reads a
-`vanillacord.txt` file from its working directory.
+## Repository role
 
-Use VanillaCord when the backend server is vanilla. Do not install VanillaCord on
-PaperMC. Paper has native Velocity forwarding support and should be configured
-through Paper's own `config/paper-global.yml`.
+VanillaCord is for **vanilla Minecraft backend servers**. It downloads the Mojang server JAR for each requested version, patches it, and writes the patched server to `out/<version>.jar`.
 
-## Fork and artifact identity
-This repository is the SupraCraft-maintained fork of ME1312/VanillaCord. Original
-upstream authorship and license history remain intact, but artifacts built and
-published here identify SupraCraft as their producer.
+Do not install VanillaCord on Paper. Paper has native Velocity forwarding support and should use Paper's own proxy configuration.
+
+This repository is the SupraCraft-maintained fork of `ME1312/VanillaCord`. Upstream authorship/license history remain intact, but new artifacts identify SupraCraft as their producer.
+
+## Documentation map
+
+- `README.md` — human entry point and operating quickstart
+- `AGENTS.md` — automated-agent rules
+- `PROJECT_CONTRACT.json` — compact machine-readable repository contract
+- `ARTIFACT_IDENTITY.md` — producer/upstream artifact identity
+- `VERSIONING.md` — immutable version/provenance rules
+- `COMPATIBILITY_STRATEGY.md` — compatibility policy/rationale
+- `docs/compatibility.md` — executable compatibility operations
+- `docs/build-modernization-status.md` — completed modernization evidence ledger
+- `MODERNIZATION_PLAN.md` — historical modernization record, not an active work queue
+
+## Artifact identity
 
 Canonical Maven identity:
 
@@ -38,55 +43,35 @@ Canonical standalone filename:
 supracraft-vanillacord-<version>.jar
 ```
 
-The historical `VanillaCord.jar` compatibility alias is not emitted by new
-SupraCraft builds or releases. Historical releases may retain upstream-derived
-filenames, but new consumers and automation should use the canonical versioned
-filename or Maven coordinate. The Java packages remain `vanillacord.*` because
-they are already neutral and keeping them stable reduces compatibility churn and
-keeps source changes practical to contribute upstream.
-
-See `ARTIFACT_IDENTITY.md` and `VERSIONING.md` for the machine-consumption and
-version policy.
-
-## Downloads
-*For Minecraft* 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, snapshots, and pre-releases
-
-<a href="https://github.com/SupraCraft/VanillaCord/releases">
-<pre>https://github.com/SupraCraft/VanillaCord/releases</pre>
-</a>
+The historical `VanillaCord.jar` alias is retired. Current builds/releases must not emit it. Java packages remain `vanillacord.*` to preserve compatibility and upstream-flowability.
 
 ## Patching a vanilla server
-Download the canonical release JAR, then run it with one or more Minecraft versions:
+
+Download an exact release JAR and run it with one or more Minecraft versions:
 
 ```sh
 java -jar supracraft-vanillacord-2.9.0.jar 26.2
 ```
 
-The patched server jar is written to:
+The patched server is written to:
 
 ```text
 out/26.2.jar
 ```
 
-Run the patched jar from the server directory that contains `server.properties`,
-`eula.txt`, and `vanillacord.txt`:
+Run the patched server from the directory containing `server.properties`, `eula.txt`, and `vanillacord.txt`:
 
 ```sh
 java -Xms2G -Xmx2G -jar out/26.2.jar --nogui
 ```
 
-Current Minecraft server releases require Java 25. Older Minecraft versions may
-require older Java runtimes, so pin both the Minecraft version and runtime when
-maintaining legacy servers.
+Runtime Java requirements are determined by the selected Minecraft release. The current compatibility sentinel uses JDK 25 for current Minecraft while VanillaCord itself emits Java 21 bytecode.
 
 ## Velocity modern forwarding
-For a vanilla backend behind Velocity, use one shared secret in three places:
 
-- Velocity proxy: `forwarding.secret`
-- VanillaCord backend: `vanillacord.txt`
-- CapRover deployment: `FORWARDING_SECRET`, when using this workspace's Docker images
+Use one shared secret between Velocity and the VanillaCord backend.
 
-Set Velocity to modern forwarding in `velocity.toml`:
+Velocity `velocity.toml`:
 
 ```toml
 online-mode = true
@@ -94,14 +79,13 @@ player-info-forwarding-mode = "modern"
 forwarding-secret-file = "forwarding.secret"
 ```
 
-Put the same secret in `forwarding.secret`:
+`forwarding.secret`:
 
 ```text
 replace-with-a-long-random-secret
 ```
 
-On the patched vanilla backend, set `server.properties` so players cannot bypass
-the proxy identity flow:
+Backend `server.properties` for a proxy-only vanilla backend:
 
 ```properties
 online-mode=false
@@ -109,7 +93,7 @@ enforce-secure-profile=false
 network-compression-threshold=-1
 ```
 
-Then configure `vanillacord.txt` in the backend server working directory:
+Backend `vanillacord.txt`:
 
 ```properties
 version = 2.0
@@ -117,17 +101,17 @@ forwarding = velocity
 seecret = replace-with-a-long-random-secret
 ```
 
-The key is intentionally spelled `seecret` because that is the historical
-VanillaCord configuration name. Repeat `seecret = ...` on additional lines only
-when rotating secrets or temporarily accepting multiple proxy secrets.
+`seecret` is intentionally spelled that way for historical VanillaCord configuration compatibility. Additional `seecret = ...` lines may be used during controlled secret rotation.
 
-Velocity modern forwarding only protects identity data. Still firewall or
-otherwise restrict backend server ports so players cannot connect directly to a
-backend server.
+Velocity forwarding protects forwarded identity data; still firewall/restrict backend ports so clients cannot bypass the proxy.
 
-## PaperMC backends
-PaperMC does not use VanillaCord. For Paper behind Velocity, use Paper's native
-Velocity forwarding instead:
+## BungeeCord / BungeeGuard
+
+VanillaCord also supports the historical BungeeCord and BungeeGuard forwarding paths. Preserve their existing configuration semantics when changing forwarding code, and add focused regression tests for protocol/handshake edge cases. `docs/bot-disconnection-fix.md` is a historical incident record for one BungeeGuard failure mode, not current deployment instructions.
+
+## Paper backends
+
+Paper does not use VanillaCord. Configure Paper's native Velocity support instead:
 
 ```yaml
 proxies:
@@ -137,60 +121,92 @@ proxies:
     secret: "replace-with-a-long-random-secret"
 ```
 
-Also keep the same backend `server.properties` posture used for proxy-only
-servers:
-
-```properties
-online-mode=false
-enforce-secure-profile=false
-network-compression-threshold=-1
-```
-
-The Velocity `forwarding.secret` value, Paper `proxies.velocity.secret`, and any
-CapRover `FORWARDING_SECRET` value must match exactly. If they do not, Velocity
-login will fail with an invalid forwarding data or forwarding secret error.
-
-## CapRover workspace behavior
-In this workspace, the vanilla server image downloads a VanillaCord release and
-patches the selected vanilla server version at runtime. Deployment code should
-locate the canonical `supracraft-vanillacord-*.jar` release asset rather than
-assuming an unversioned filename.
-
-```text
-MINECRAFT_SERVER_VERSION=26.2
-FORWARDING_SECRET=replace-with-a-long-random-secret
-SERVER_EULA=true
-```
-
-The Paper image does not use VanillaCord. It downloads Paper directly and should
-use the same `FORWARDING_SECRET` as Velocity.
+Keep direct backend access restricted just as for a patched vanilla backend.
 
 ## Building
-- The repository pins Apache Maven `3.9.16` with Apache Maven Wrapper `3.3.4`. Use `./mvnw` on Unix-like systems or `mvnw.cmd` on Windows; do not depend on a system Maven version.
-- Use JDK 25 for current Minecraft compatibility checks. The Maven build emits Java 21 bytecode (`maven.compiler.release=21`).
-- Canonical Bridge dependencies come from `io.github.supracraft.bridge` in the `SupraCraft/Bridge` GitHub Packages repository.
-- The source POM pins a known exact Bridge baseline. Normal integration CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build and always records the exact coordinate consumed.
-- `BRIDGE_OWNER` defaults to `SupraCraft`; `BRIDGE_VERSION` pins an exact canonical Bridge build.
-- Example: `BRIDGE_OWNER=SupraCraft BRIDGE_VERSION=0.1.0-dev.34 ./mvnw -B verify`
-- To exercise the newest canonical Bridge development build: `BRIDGE_VERSION=$(./scripts/resolve-bridge-version.sh) ./mvnw -B verify`
-- Compatibility probe: `scripts/Invoke-CompatibilityProbe.ps1 -UseDocker` tests current Mojang release, optional snapshot/RC, required supported releases, and best-effort legacy releases.
 
-Development versions are immutable `X.Y.Z-dev.<run>` coordinates, release candidates
-are `X.Y.Z-rc.N`, and stable releases are `X.Y.Z`. The project does not use Maven
-`SNAPSHOT` semantics for CI artifacts.
+The repository pins Maven `3.9.16` through Maven Wrapper `3.3.4`. Use the wrapper, not a system Maven:
 
-## GitHub Packages auth (local)
-- You need a PAT with `read:packages` for the owner hosting Bridge (and `write:packages` if publishing Bridge).
-- Keep auth in-repo to avoid host config issues: `export GH_CONFIG_DIR=$PWD/.gh && printf "%s\n" "$PAT" | gh auth login --with-token`
-- Set `GITHUB_TOKEN=$PAT` so Maven and `scripts/resolve-bridge-version.sh` can read from `https://maven.pkg.github.com/${BRIDGE_OWNER}/Bridge`.
+```sh
+./mvnw -B verify
+```
 
-## GitHub Packages auth (CI)
-The workflow uses `BRIDGE_PACKAGES_TOKEN` and `BRIDGE_PACKAGES_USERNAME` when
-provided; otherwise it falls back to the repository `GITHUB_TOKEN` and actor.
+Windows:
 
-## Current fork status
-- Latest historical stable release: [`v2.8`](https://github.com/SupraCraft/VanillaCord/releases/tag/v2.8).
-- Next normalized SupraCraft release line: `2.9.0`; development builds use `2.9.0-dev.<run>`.
-- Current compatibility sentinel validates the current stable Minecraft release with patch, JAR-integrity, and boot checks.
-- [Compatibility report](docs/minecraft-compatibility-report.md).
-- Recent work includes Minecraft 26.2 authlib/GameProfile compatibility fixes and deterministic Velocity-forwarding validation.
+```powershell
+.\mvnw.cmd -B verify
+```
+
+The source POM pins an exact Bridge baseline. Canonical Bridge artifacts come from `io.github.supracraft.bridge` in the `SupraCraft/Bridge` GitHub Packages repository.
+
+For normal integration work, resolve the newest canonical immutable Bridge development build and record the exact result:
+
+```sh
+export BRIDGE_OWNER="${BRIDGE_OWNER:-SupraCraft}"
+export BRIDGE_VERSION="$(./scripts/resolve-bridge-version.sh)"
+./mvnw -B verify -Dbridge.version="$BRIDGE_VERSION"
+```
+
+For release or reproducibility work, supply the exact previously selected Bridge version rather than resolving again:
+
+```sh
+export BRIDGE_VERSION="<exact-bridge-version>"
+./mvnw -B verify -Dbridge.version="$BRIDGE_VERSION"
+```
+
+GitHub Packages access normally requires a token with `read:packages` plus the matching GitHub actor/user identity.
+
+## Version semantics
+
+- source line: `X.Y.Z-dev` (currently `2.9.0-dev`)
+- ordinary CI: immutable `X.Y.Z-dev.<github-run-number>`
+- release candidate: `X.Y.Z-rc.N`
+- stable release/tag: `X.Y.Z` / `vX.Y.Z`
+- Maven `SNAPSHOT` semantics are intentionally not used
+
+Bridge and VanillaCord version independently. Every VanillaCord artifact records the exact Bridge coordinate it consumed.
+
+## Compatibility sentinel
+
+The canonical implementation is:
+
+```sh
+scripts/check-minecraft-compatibility.sh
+```
+
+When no JAR argument is supplied it requires exactly one `artifacts/supracraft-vanillacord-*.jar` artifact.
+
+Policy:
+
+| Tier | Effect |
+| --- | --- |
+| current stable | blocking |
+| explicitly required supported versions | blocking |
+| current development snapshot/RC | advisory |
+| best-effort legacy | advisory |
+
+Current workflow evidence is authoritative; static checked-in tables are not treated as evergreen compatibility status. See `docs/compatibility.md` and `COMPATIBILITY_STRATEGY.md`.
+
+## Build and release evidence
+
+Current CI/release validation retains:
+
+- generated manifest/source/upstream provenance
+- exact Bridge coordinate
+- CycloneDX SBOM
+- artifact inventory
+- `BUILD-METADATA.properties`
+- `REPRODUCIBILITY.properties`
+- SHA-256 checksums
+- byte-for-byte canonical JAR reproducibility proof
+- artifact contract checks that bundled/provided dependency boundaries remain correct
+- current-stable Minecraft patch/integrity/boot evidence where required
+
+## Current fork state
+
+- historical upstream-derived releases/tags remain preserved
+- normalized SupraCraft development line is `2.9.0-dev`
+- canonical identity/naming migration is complete
+- Maven 3 build modernization and reproducibility work are complete
+- authlib/Netty compile fixtures are derived from stable Minecraft compatibility evidence rather than unconstrained dependency-latest queries
+- future modernization is event-driven: Maven 4 only after GA/proven compatibility; Shade only after a demonstrated Assembly limitation; stronger integration tests only after observed gaps

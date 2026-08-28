@@ -47,6 +47,14 @@ wrapper = Path('.mvn/wrapper/maven-wrapper.properties').read_text(encoding='utf-
 match = re.search(r'apache-maven-([0-9.]+)-bin', wrapper)
 assert match, 'Unable to determine Maven version from wrapper properties'
 assert contract['toolchain']['maven'] == match.group(1)
+
+# The retired path may appear only in an explicit negative/historical warning.
+for path in [Path('README.md'), Path('AGENTS.md'), Path('docs/compatibility.md'), Path('docs/bridge-dependency.md')]:
+    for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+        if 'artifacts/VanillaCord.jar' in line:
+            lowered = line.lower()
+            assert ('do not use' in lowered or 'historical' in lowered or 'retired' in lowered), \
+                f'{path}:{number}: retired VanillaCord.jar path used as current instruction'
 PY
 
 active_docs=(
@@ -56,11 +64,6 @@ active_docs=(
   docs/compatibility.md
   docs/bridge-dependency.md
 )
-
-if grep -nH -F 'artifacts/VanillaCord.jar' "${active_docs[@]}"; then
-  echo 'Retired VanillaCord.jar operational path reappeared in evergreen documentation.' >&2
-  exit 1
-fi
 
 if grep -nHE '0\.1\.0-dev\.[0-9]+' "${active_docs[@]}"; then
   echo 'Volatile concrete Bridge development coordinate reappeared in evergreen documentation.' >&2

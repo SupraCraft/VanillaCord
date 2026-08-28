@@ -78,7 +78,15 @@ Bridge PR #10 merged on 2026-08-28:
 - proves byte-identical rebuilds for the three published Bridge JARs
 - records SHA-256 reproducibility evidence before publication.
 
-Bridge PR #11 is the follow-on publication-hardening tranche. It removes the remaining rebuild seam by promoting the exact tested/version-set POMs and JARs into GitHub Packages and release/static-Maven outputs. PR validation exercises the same promotion helper against a disposable local Maven repository and requires byte-for-byte equality between tested and deployed JARs.
+Bridge PR #11 merged as `88383b54b44c0de1756c5119048af95c6159da36`:
+
+- removed the remaining build-versus-publish rebuild seam
+- the validated build job exports exact version-set POMs and tested reactor JARs
+- the write-capable publish job downloads those artifacts rather than invoking a second reactor build
+- Maven Deploy Plugin `3.1.4` deploys the already-tested files under the canonical Maven coordinates
+- PR validation deployed into a disposable `file://` Maven repository and required byte-for-byte equality between built and deployed JARs
+- post-merge master workflow run `33168882065` successfully uploaded the tested publication bundle, downloaded it in the publish job, verified the promoted version, and published the tested artifacts to GitHub Packages
+- ordinary master publication correctly skipped release-only static Pages and release-asset steps; those paths use the same tested inputs when a release/tag triggers them.
 
 ## Tranche D — reproducible canonical VanillaCord JAR
 
@@ -154,12 +162,16 @@ VanillaCord PR #28 merged as `69e3b1614fe361b624338fd2d1a0ccb06c390900`:
 
 Future authlib/Netty changes should continue to follow the same rule: derive the fixture from the stable Minecraft metadata, isolate the change, and require current-stable runtime evidence. Do not auto-update these dependencies independently of Minecraft.
 
-## Remaining modernization
+## Modernization status
 
-- complete Bridge PR #11 and prove that package/release publication promotes the tested bytes rather than rebuilding them
+The planned Maven 3 build, artifact-identity, immutable-versioning, reproducibility, dependency-fixture, and exact-artifact-publication modernization is complete and proven on the current baseline.
+
+Remaining work is intentionally event-driven rather than migration debt:
+
 - after Maven 4 reaches GA, add a nonblocking Maven 4 compatibility lane before considering any default migration
 - keep Shade deferred unless Assembly demonstrates a concrete packaging limitation
-- continue compatibility-fixture updates only when Mojang changes the stable runtime or a real compatibility failure provides evidence.
+- update Minecraft compatibility fixtures only when Mojang changes the stable runtime or a real compatibility failure provides evidence
+- continue observing the compatibility sentinel and deterministic forwarding/source-scanner tests for evidence that stronger integration coverage is justified.
 
 ## Deferred
 

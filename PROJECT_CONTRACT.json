@@ -1,12 +1,20 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.2.0",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
   "source_version": "2.9.0-dev",
+  "brand": {
+    "organization": "SupraCraft",
+    "contract_version": "0.1.0-candidate",
+    "profile": "BRAND_PROFILE.json",
+    "governance_source": "SupraCraft/brand-governance-private:profiles/projects/VanillaCord.json",
+    "runtime_dependency_on_private_repo": false
+  },
   "artifact": {
     "maven": "io.github.supracraft.vanillacord:vanillacord:<version>",
     "standalone": "supracraft-vanillacord-<version>.jar",
+    "embedded_project_icon": "META-INF/supracraft/vanillacord/icon.svg",
     "historical_aliases_forbidden_in_current_output": ["VanillaCord.jar"]
   },
   "versioning": {
@@ -27,7 +35,8 @@
     "repository": "SupraCraft/Bridge",
     "group": "io.github.supracraft.bridge",
     "versioning": "independent",
-    "release_input_policy": "exact immutable coordinate"
+    "release_input_policy": "exact immutable coordinate",
+    "user_identity_visibility": "implementation-detail-not-part-of-brand"
   },
   "validation": {
     "build": "./mvnw -B verify",
@@ -35,6 +44,7 @@
     "reproducibility": "scripts/verify-reproducible-build.sh",
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
     "documentation_contract": "scripts/check-documentation-contract.sh",
+    "public_site_builder": "scripts/build-public-site.py",
     "compatibility_tiers": {
       "current-stable": "blocking",
       "required-supported": "blocking-when-requested",
@@ -62,6 +72,13 @@
     "metadata_apply": "scripts/apply-github-metadata.py",
     "pages_entrypoint": "docs/index.html",
     "pages_url": "https://supracraft.github.io/VanillaCord/",
+    "pages_source": "github-actions",
+    "pages_workflow": ".github/workflows/pages.yml",
+    "site_builder": "scripts/build-public-site.py",
+    "brand_profile": "BRAND_PROFILE.json",
+    "brand_manifest": "docs/assets/brand/brand.json",
+    "brand_guidelines": "docs/brand-guidelines.md",
+    "machine_endpoints": ["project.json", "github.json", "brand.json", "artifacts.json", "compatibility.json", "llms.txt"],
     "upstream_attribution_required": true
   },
   "provenance": {
@@ -82,7 +99,9 @@
     "diagnostics": "docs/diagnostics.md",
     "artifact_retention": "docs/artifact-retention.md",
     "github_metadata": "GITHUB_METADATA.json",
+    "brand_profile": "BRAND_PROFILE.json",
     "pages_entrypoint": "docs/index.html",
+    "brand_guidelines": "docs/brand-guidelines.md",
     "modernization_ledger": "docs/build-modernization-status.md",
     "historical_modernization_record": "MODERNIZATION_PLAN.md"
   }

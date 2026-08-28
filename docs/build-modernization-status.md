@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-28
 
-This file is the execution ledger for `MODERNIZATION_PLAN.md`. The plan defines policy and sequencing; this file records what was actually changed and the evidence required before each tranche is merged.
+This file is the execution ledger for `MODERNIZATION_PLAN.md`. The plan defines policy and sequencing; this file records what actually changed and the evidence required before each tranche was merged.
 
 ## Baseline
 
@@ -12,17 +12,13 @@ Runtime invariants remain unchanged: Java 21 bytecode, generated provenance mani
 
 ## Tranche A — Maven 3 packaging/tooling baseline
 
-PR: #18  
-Status: **merged**  
-Merge commit: `a5f0af09b1034c5af11e22cdcd24e96d66788f38`
+PR #18 merged as `a5f0af09b1034c5af11e22cdcd24e96d66788f38`.
 
 Implemented and proven: artifact contract/inventory; Assembly `3.8.0`; Compiler `3.15.0`; Surefire `3.5.6`; Versions `2.21.0`; Enforcer `3.6.3`; Maven/Java baselines; UTF-8; Antrun removal; standard LICENSE resources; focused stable patch+boot gating.
 
 ## Tranche B — Maven Wrapper
 
-PR: #19  
-Status: **merged**  
-Merge commit: `05018b4405de225c338710e001c99320e0c63071`
+PR #19 merged as `05018b4405de225c338710e001c99320e0c63071`.
 
 Implemented and proven: Apache Maven Wrapper `3.3.4`; Maven `3.9.16`; wrapper authoritative in build/release/compatibility paths; JDK 21/JDK 25 Maven assertions; wrapper provenance recorded.
 
@@ -72,15 +68,21 @@ Bridge PR #8 merged as `50a1d9690b437393d07e7cfca69f154d41657768`:
 
 Bridge PR #9 merged as `d5066547e70830457f33ab22cdad67df094dcdf1`:
 
-- provided ASM compile baseline aligned from `9.7` to current `9.10.1` in `bridge` and `bridge-asm`
+- provided ASM compile baseline aligned from `9.7` to `9.10.1` in `bridge` and `bridge-asm`
 - ASM remains provided rather than bundled
 - reactor build/test/SBOM and artifact/provenance gates passed unchanged.
 
-## Tranche D — reproducible canonical JARs
+Bridge PR #10 merged on 2026-08-28:
 
-PR: #22  
-Status: **merged**  
-Merge commit: `165f188fccfe8cb6b531666749f9a155cba933d3`
+- fixed `project.build.outputTimestamp` at `2000-01-01T00:00:00Z`
+- proves byte-identical rebuilds for the three published Bridge JARs
+- records SHA-256 reproducibility evidence before publication.
+
+Bridge PR #11 is the follow-on publication-hardening tranche. It removes the remaining rebuild seam by promoting the exact tested/version-set POMs and JARs into GitHub Packages and release/static-Maven outputs. PR validation exercises the same promotion helper against a disposable local Maven repository and requires byte-for-byte equality between tested and deployed JARs.
+
+## Tranche D — reproducible canonical VanillaCord JAR
+
+PR #22 merged as `165f188fccfe8cb6b531666749f9a155cba933d3`.
 
 Implemented and proven:
 
@@ -98,9 +100,7 @@ CycloneDX byte-for-byte reproducibility is intentionally out of scope; the execu
 
 ## Tranche D.1 — align compatibility gating semantics
 
-PR: #23  
-Status: **merged**  
-Merge commit: `738c5b44b2d5d89265db86a9bed0e718256b734f`
+PR #23 merged as `738c5b44b2d5d89265db86a9bed0e718256b734f`.
 
 The strategy and executable policy now agree:
 
@@ -113,9 +113,9 @@ The strategy and executable policy now agree:
 
 The focused PR stable patch/integrity/boot gate and ordinary build/reproducibility validation both remained green.
 
-## Tranche E — dependency freshness
+## Tranche E — dependency and compatibility-fixture freshness
 
-Status: **low-risk tranche complete; Minecraft runtime fixtures intentionally evidence-gated**
+### Bundled and test dependencies
 
 VanillaCord PR #24 merged as `f02e67e0a0e0ef7416e7b76c5caad2a371d59448`:
 
@@ -133,18 +133,33 @@ ASM `9.10.1` is current in VanillaCord and Bridge. Surefire `3.5.6`, Maven Plugi
 
 ### Minecraft-facing provided dependencies
 
-`com.mojang:authlib` and Netty are not treated as ordinary freshness dependencies. They are `provided` compile/runtime fixtures for classes supplied by Minecraft, so selecting the newest Maven Central version independently of Minecraft could make the compile model less representative.
+These are compatibility fixtures, not ordinary freshness dependencies. Their versions are derived from the current stable Minecraft runtime rather than from an unconstrained repository "latest" query.
 
-The next change, if any, should derive the versions used by the current stable Minecraft metadata and prove them through the existing JDK 25 patch/integrity/boot and forwarding tests. Current 26.2-era evidence shows Minecraft has moved materially beyond the checked-in `authlib 6.0.53` / Netty `4.1.107.Final` baselines, so these pins should be reviewed as a compatibility-fixture alignment task rather than ignored indefinitely.
+VanillaCord PR #27 merged as `7c39378e8b0f9b4789dc3b3eee2b92a95f203c11`:
 
-Do not auto-update these two dependencies merely because a repository reports a newer release.
+- aligned provided `com.mojang:authlib` from `6.0.53` to Minecraft 26.2's `9.0.75`
+- the first validation exposed a real API seam: authlib 9 removed the historical `GameProfile.getProperties()` compile-time accessor
+- VanillaCord no longer directly links to that obsolete accessor and resolves modern three-argument and historical two-argument/mutable-property `GameProfile` shapes at the runtime boundary
+- a focused current-authlib construction test was added
+- authlib remains `provided`; no Mojang authlib classes are bundled
+- unit tests, reproducible artifact proof, and JDK 25 current-stable patch/integrity/boot passed before merge.
+
+VanillaCord PR #28 merged as `69e3b1614fe361b624338fd2d1a0ccb06c390900`:
+
+- replaced stale provided `io.netty:netty-all:4.1.107.Final`
+- aligned to Minecraft 26.2's `4.2.15.Final` line
+- declares only the direct provided modules VanillaCord actually compiles against: `netty-buffer`, `netty-common`, and `netty-transport`
+- Netty remains provided; no Netty runtime is bundled into the SupraCraft JAR
+- forwarding tests, reproducibility/artifact contract, and JDK 25 current-stable patch/integrity/boot passed before merge.
+
+Future authlib/Netty changes should continue to follow the same rule: derive the fixture from the stable Minecraft metadata, isolate the change, and require current-stable runtime evidence. Do not auto-update these dependencies independently of Minecraft.
 
 ## Remaining modernization
 
-- determine and validate current-stable Minecraft-derived `authlib` and Netty compile fixtures
-- evaluate whether Bridge should receive the same fixed-output-timestamp/reproducibility proof as VanillaCord, especially because its publish job currently rebuilds instead of promoting the tested artifact
+- complete Bridge PR #11 and prove that package/release publication promotes the tested bytes rather than rebuilding them
 - after Maven 4 reaches GA, add a nonblocking Maven 4 compatibility lane before considering any default migration
-- keep Shade deferred unless Assembly demonstrates a concrete packaging limitation.
+- keep Shade deferred unless Assembly demonstrates a concrete packaging limitation
+- continue compatibility-fixture updates only when Mojang changes the stable runtime or a real compatibility failure provides evidence.
 
 ## Deferred
 

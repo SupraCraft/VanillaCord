@@ -9,6 +9,9 @@ on:
       - 'test/**'
       - 'resources/**'
       - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/wrapper/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'
       - 'VERSIONING.md'
@@ -22,6 +25,9 @@ on:
       - 'test/**'
       - 'resources/**'
       - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/wrapper/**'
       - 'scripts/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
@@ -79,6 +85,11 @@ jobs:
           server-username: BRIDGE_PACKAGES_USERNAME
           server-password: BRIDGE_PACKAGES_TOKEN
 
+      - name: Verify pinned Maven
+        run: |
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
       - name: Derive version
         id: version
         run: |
@@ -98,7 +109,7 @@ jobs:
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
-        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
+        run: ./mvnw -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
       - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
@@ -119,11 +130,13 @@ jobs:
           git.commit=${SOURCE_SHA}
           git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
+          maven.version=3.9.16
+          maven.wrapper.version=3.3.4
           EOF
 
       - name: Build, test, and generate SBOM
         run: >-
-          mvn -B verify
+          ./mvnw -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
           -Dbridge.version=${BRIDGE_VERSION}
           -Dbuild.commit=${SOURCE_SHA}
@@ -197,6 +210,11 @@ jobs:
           server-username: BRIDGE_PACKAGES_USERNAME
           server-password: BRIDGE_PACKAGES_TOKEN
 
+      - name: Verify pinned Maven
+        run: |
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
       - name: Derive version
         id: version
         run: |
@@ -205,7 +223,7 @@ jobs:
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
-        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
+        run: ./mvnw -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
       - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
@@ -226,11 +244,13 @@ jobs:
           git.commit=${SOURCE_SHA}
           git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
+          maven.version=3.9.16
+          maven.wrapper.version=3.3.4
           EOF
 
       - name: Build, test, and generate SBOM
         run: >-
-          mvn -B verify
+          ./mvnw -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
           -Dbridge.version=${BRIDGE_VERSION}
           -Dbuild.commit=${SOURCE_SHA}

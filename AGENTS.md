@@ -4,7 +4,7 @@ Welcome! If you are an AI agent working on this repository, please review these 
 
 ## Tech Stack
 * **Java:** Build with JDK 25 for current Minecraft compatibility probes. The project currently emits Java 21 bytecode via `maven.compiler.release`.
-* **Build Tool:** Maven
+* **Build Tool:** Apache Maven 3.9.16, pinned by Apache Maven Wrapper 3.3.4. Use `./mvnw` (or `mvnw.cmd` on Windows) rather than a system Maven installation.
 
 ## Build Instructions
 This project uses GitHub Packages to download the `Bridge` dependency. When running a build locally or within an automated environment, you must provide authentication.
@@ -22,30 +22,33 @@ export GITHUB_ACTOR=your-github-username
 (See `.env.example` in the root of the repository for reference).
 
 ### Compiling and Verifying
-To compile the code and run the tests, use Maven.
-
-Before running Maven, if you need to fetch the latest `Bridge` version, use the provided script:
+If you need to fetch the latest exact `Bridge` version, use the provided script:
 ```sh
 export BRIDGE_VERSION=$(./scripts/resolve-bridge-version.sh)
 ```
-Then run the build:
+Then run the canonical build:
 ```sh
-mvn -B verify
+./mvnw -B verify
 ```
 
-Alternatively, you can skip the specific `BRIDGE_VERSION` export and just rely on Maven to pull `0.1.0-SNAPSHOT` if you don't need a strict version pin, but providing it ensures reproducibility.
+For a reproducible build or release investigation, provide the exact recorded `BRIDGE_VERSION` rather than allowing a moving snapshot to resolve again.
 
 To quickly check if everything compiles:
 ```sh
-mvn -B clean compile
+./mvnw -B clean compile
 ```
 
 To run tests:
 ```sh
-mvn -B test
+./mvnw -B test
 ```
 
-## Important Notes
-* Do not modify build artifacts directly.
+On Windows, use the equivalent `mvnw.cmd` commands.
+
+## Build and Compatibility Discipline
+* Do not bypass the Maven Wrapper or change its pinned Maven version without updating the versioning/modernization documentation and CI evidence.
+* Do not modify generated build artifacts directly.
+* Packaging/toolchain changes must preserve the artifact contract in `scripts/verify-artifact-contract.sh` and pass the focused current-stable Minecraft patch + boot compatibility gate.
+* Keep `Bridge` and VanillaCord independently versioned; record the exact Bridge coordinate consumed by each VanillaCord artifact.
 * Ensure proper testing and verification after modifying the codebase.
 * Look for `AGENTS.md` files in nested directories (if any are added in the future) for more specific instructions.

@@ -4,11 +4,11 @@ VanillaCord and Bridge use independent semantic versioning. VanillaCord does not
 
 ## Source version
 
-The checked-in POM carries the next development version. CI may rewrite the effective Maven version for an individual build without committing that generated value back to the repository.
+The checked-in POM is the single source of truth for the next development line and carries `X.Y.Z-SNAPSHOT`. CI may rewrite the effective Maven version for an individual build without committing that generated value back to the repository. Workflow code must derive the numeric base from Maven rather than duplicate it.
 
 ## CI versions
 
-Ordinary non-tagged builds use `0.1.0-SNAPSHOT.<GitHub run number>`. The JAR manifest also records the Git commit, ref, and run number.
+Ordinary non-tagged builds read the source POM, strip `-SNAPSHOT`, and use `X.Y.Z-SNAPSHOT.<GitHub run number>`. The JAR manifest also records the source Git commit, ref, and run number.
 
 Development/PR builds may resolve the newest compatible Bridge snapshot when no explicit `BRIDGE_VERSION` is supplied. Once resolved, that exact version is passed to Maven and recorded in the artifact metadata and SBOM.
 
@@ -44,4 +44,4 @@ Normal development intentionally allows a moving Bridge snapshot so integration 
 
 ## Reproducibility
 
-Build timestamps are intentionally excluded from the embedded manifest. Source commit, effective project version, exact Bridge version, and dependency SBOM provide the durable reconstruction inputs.
+Build timestamps are intentionally excluded from the embedded JAR manifest. Source commit, effective project version, exact Bridge version, and dependency SBOM provide the durable reconstruction inputs.

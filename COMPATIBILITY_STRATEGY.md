@@ -58,7 +58,8 @@ High-value automation:
 - preserve a human-readable compatibility report and workflow diagnostics;
 - keep current stable blocking and development snapshots as early warning;
 - retain a manually triggered maintained/legacy matrix for regressions;
-- add patch-output integrity, boot, and forwarding smoke checks incrementally.
+- add patch-output integrity, boot, and forwarding-boundary checks incrementally;
+- prefer stronger scanner evidence without replacing compatibility fallbacks.
 
 Explicit non-goals unless future evidence justifies them:
 
@@ -153,24 +154,33 @@ layers cost more to maintain than the failures they prevent:
 2. **Integrity** — the expected patched output exists and is a readable jar.
 3. **Boot** — the patched server reaches a known-good startup boundary in an
    ephemeral working directory and is terminated cleanly.
-4. **Forwarding smoke** — a minimal proxy/login fixture proves the VanillaCord
-   forwarding path accepts correct forwarded identity and rejects invalid
-   forwarding data.
+4. **Forwarding boundary** — deterministic tests validate Velocity's HMAC and
+   forwarding wire data (address, UUID, username, and profile properties) using
+   the same parser that production login handling consumes.
+5. **Live proxy smoke, only if justified** — a real Velocity process/client is a
+   follow-on only if production failures demonstrate that the deterministic
+   boundary omits material behavior.
 
-The test fixture should stop at the forwarding boundary. It should not emulate
-normal Minecraft gameplay, world loading, movement, chat, or resource-pack
-behavior unless those become necessary to prove VanillaCord behavior.
+The forwarding fixture deliberately stops before general Minecraft gameplay. It
+does not emulate world loading, movement, chat, or resource packs. The portable
+parser returns plain value records; authlib `Property` and `GameProfile` objects
+are created only at the Minecraft runtime boundary, where Bridge/runtime version
+adaptation already belongs.
 
 ## SourceScanner Hardening
 
 Monitoring is evidence; stronger discovery prevents failures. Engineering effort
 should therefore favor SourceScanner robustness over elaborate CI reporting.
 
-Future scanner work should combine multiple signals where practical (constants,
-method shape, field shape, invocation context) and emit explicit discovery
-results for `startup`, `handshake`, `login`, `send`, `receive`, and `connection`.
-A target selected by a single broad diagnostic substring should be treated as a
-compatibility risk.
+Login discovery now distinguishes strong hello-specific diagnostics from the
+broader `unexpected login` fallback. Strong signals may replace a weak fallback;
+a later weak fallback cannot overwrite a strong match. Acknowledgement text is
+explicitly excluded. This preserves older-version compatibility while reducing
+the chance that a generic login diagnostic displaces better evidence.
+
+Tests cover the historical acknowledgement failure and both strong/weak
+visitation orders. Further scanner hardening should add structural evidence only
+where actual compatibility failures show that string precedence is insufficient.
 
 ## CI Policy
 
@@ -178,11 +188,13 @@ compatibility risk.
 - Compatibility-harness PR changes: latest stable patch + integrity + boot.
 - Daily schedule: latest stable patch + integrity + boot, plus latest snapshot/RC
   patch + integrity.
+- Normal Java tests include deterministic Velocity forwarding-boundary coverage
+  and SourceScanner ambiguity/precedence coverage.
 - Manual/release regression: current targets plus representative maintained
   versions as appropriate.
 - Full legacy sweep: manual diagnostic operation, not routine release work.
-- Stable compatibility failures are blocking once boot/forwarding checks are in
-  place.
+- Stable compatibility failures are blocking once the required behavioral checks
+  are in place.
 - Snapshot failures are early-warning evidence, not automatic proof of a
   VanillaCord defect.
 
@@ -197,6 +209,14 @@ Implemented:
 - The latest stable target can be boot-smoked in an isolated temporary server
   directory; success requires reaching the normal server startup marker before a
   graceful `stop` is sent.
+- `VelocityForwardingParser` isolates Velocity HMAC/wire parsing from Bridge and
+  authlib runtime linkage. Unit tests independently construct signed forwarding
+  payloads and verify correct-secret parsing, wrong-secret rejection, secret
+  rotation, forwarded address, UUID, username, and signed profile properties.
+- `VelocityHelper.completeTransaction` delegates to that same parser and performs
+  authlib object construction only after parsing succeeds.
+- `SourceScanner` preserves `unexpected login` as a fallback while preferring
+  hello-specific evidence and refusing acknowledgement diagnostics.
 - `scripts/Invoke-CompatibilityProbe.ps1` provides a local Windows entry point.
 - `.github/workflows/compatibility.yml` supports manual matrix runs, a daily
   stateless compatibility sentinel, and focused PR validation of compatibility
@@ -204,25 +224,31 @@ Implemented:
 - Scheduled runs are restricted to current stable + current snapshot/RC, use a
   30-minute job timeout, cancel redundant in-progress runs, publish the report in
   the job summary, and retain the report artifact for 30 days.
-- Normal build CI validates relevant pull requests before merge.
+- Normal build CI validates relevant pull requests before merge, and its
+  placeholder-version guard uses runner-portable `grep`.
 - ASM `9.10.1` supports reading current Java 25-era class files.
 
 Next implementation increments, in priority order:
 
-1. prove the new stable boot harness in GitHub Actions and keep it only if the
-   signal is reliable;
-2. add the smallest maintainable Velocity forwarding-boundary smoke test;
-3. improve SourceScanner confidence/diagnostics using multiple signals;
+1. observe the boot, forwarding, and scanner checks across real Mojang and
+   VanillaCord changes to measure false-positive/maintenance cost;
+2. add more SourceScanner structural evidence only in response to an observed
+   ambiguity the current precedence rules cannot resolve;
+3. add a live Velocity process only if the deterministic boundary demonstrably
+   misses a material forwarding failure;
 4. only then consider release gating or automated issue lifecycle based on
    observed failure frequency.
 
 ## Stop Conditions
 
-Reduce the sentinel back to patch + integrity + boot if the forwarding fixture
-requires materially more maintenance than VanillaCord itself, produces mostly
-harness failures, or tracks Minecraft protocol changes unrelated to forwarding.
-If the boot fixture itself becomes a source of frequent false failures, reduce it
-to a cheaper executable-jar/runtime sanity check rather than adding more server
+Do not add a live Velocity/client fixture if the deterministic boundary catches
+forwarding regressions at substantially lower maintenance cost. If a live fixture
+is later added and requires materially more maintenance than VanillaCord itself,
+produces mostly harness failures, or tracks Minecraft protocol changes unrelated
+to forwarding, remove it and keep the smaller boundary test.
+
+If the boot fixture becomes a source of frequent false failures, reduce it to a
+cheaper executable-jar/runtime sanity check rather than adding more server
 orchestration.
 
 Do not add compatibility-management infrastructure unless repeated real failures

@@ -16,40 +16,34 @@ fail() {
 jar tf "$jar_path" >/tmp/vanillacord-jar-entries.txt || fail "JAR is unreadable"
 LC_ALL=C sort /tmp/vanillacord-jar-entries.txt >"$inventory_path"
 
-require_entry() {
-  grep -Fxq "$1" /tmp/vanillacord-jar-entries.txt || fail "required JAR entry missing: $1"
-}
-
-forbid_entry() {
-  if grep -Fxq "$1" /tmp/vanillacord-jar-entries.txt; then
-    fail "provided dependency leaked into fat JAR: $1"
-  fi
-}
+require_entry() { grep -Fxq "$1" /tmp/vanillacord-jar-entries.txt || fail "required JAR entry missing: $1"; }
+forbid_entry() { if grep -Fxq "$1" /tmp/vanillacord-jar-entries.txt; then fail "provided dependency leaked into fat JAR: $1"; fi; }
 
 require_entry 'vanillacord/Downloader.class'
 require_entry 'com/alibaba/fastjson2/JSON.class'
 require_entry 'org/objectweb/asm/ClassReader.class'
 require_entry 'LICENSE'
-
 forbid_entry 'com/mojang/authlib/GameProfile.class'
 forbid_entry 'io/netty/buffer/ByteBuf.class'
 
-# JAR manifests are specified with CRLF line endings. Normalize them before
-# exact-line assertions so the contract remains strict without depending on
-# the host text conventions used by grep.
 unzip -p "$jar_path" META-INF/MANIFEST.MF | tr -d '\r' >/tmp/vanillacord-manifest.mf \
   || fail "cannot read generated manifest"
 
-grep -Fqx 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf \
-  || fail 'main class manifest contract changed'
-grep -Fqx "Implementation-Version: ${expected_version}" /tmp/vanillacord-manifest.mf \
-  || fail 'implementation version does not match effective build version'
-grep -Fqx "Bridge-Version: ${expected_bridge}" /tmp/vanillacord-manifest.mf \
-  || fail 'Bridge provenance does not match resolved build input'
+require_manifest() {
+  grep -Fqx "$1" /tmp/vanillacord-manifest.mf || fail "manifest contract changed or missing: $1"
+}
+
+require_manifest 'Main-Class: vanillacord.Downloader'
+require_manifest 'Implementation-Title: VanillaCord'
+require_manifest 'Implementation-Vendor: SupraCraft'
+require_manifest "Implementation-Version: ${expected_version}"
+require_manifest 'Source-Repository: SupraCraft/VanillaCord'
+require_manifest 'Upstream-Repository: ME1312/VanillaCord'
+require_manifest "Bridge-Version: ${expected_bridge}"
+require_manifest "Bridge-Coordinate: io.github.supracraft.bridge:bridge:${expected_bridge}"
 
 if [[ -n "$expected_commit" ]]; then
-  grep -Fqx "Build-Commit: ${expected_commit}" /tmp/vanillacord-manifest.mf \
-    || fail 'source commit provenance does not match build input'
+  require_manifest "Build-Commit: ${expected_commit}"
 fi
 
 echo "Artifact contract verified: $jar_path"

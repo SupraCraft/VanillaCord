@@ -7,6 +7,7 @@ on:
       - 'src/**'
       - 'java/**'
       - 'test/**'
+      - 'resources/**'
       - 'pom.xml'
       - 'scripts/**'
       - '.github/workflows/build.yml'
@@ -17,6 +18,7 @@ on:
       - 'src/**'
       - 'java/**'
       - 'test/**'
+      - 'resources/**'
       - 'pom.xml'
       - 'scripts/**'
       - '.github/workflows/build.yml'
@@ -124,6 +126,14 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
+      - name: Verify generated artifact manifest
+        run: |
+          unzip -p artifacts/VanillaCord.jar META-INF/MANIFEST.MF > /tmp/vanillacord-manifest.mf
+          grep -F 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf
+          grep -F 'Implementation-Version: ${{ steps.version.outputs.VALUE }}' /tmp/vanillacord-manifest.mf
+          grep -F "Build-Commit: ${SOURCE_SHA}" /tmp/vanillacord-manifest.mf
+          grep -F "Bridge-Version: ${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
+
       - name: Generate checksums
         run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
 
@@ -220,6 +230,13 @@ jobs:
           -Dbuild.commit=${SOURCE_SHA}
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Verify generated artifact manifest
+        run: |
+          unzip -p artifacts/VanillaCord.jar META-INF/MANIFEST.MF > /tmp/vanillacord-manifest.mf
+          grep -F 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf
+          grep -F 'Implementation-Version: ${{ steps.version.outputs.VALUE }}' /tmp/vanillacord-manifest.mf
+          grep -F "Bridge-Version: ${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
 
       - name: Generate checksums
         run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS

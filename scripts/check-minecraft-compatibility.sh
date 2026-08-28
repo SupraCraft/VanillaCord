@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-JAR_PATH="${1:-artifacts/VanillaCord.jar}"
+if [[ $# -gt 0 ]]; then
+  JAR_PATH="$1"
+else
+  mapfile -t canonical_jars < <(find artifacts -maxdepth 1 -type f -name 'supracraft-vanillacord-*.jar' -print | LC_ALL=C sort)
+  if [[ ${#canonical_jars[@]} -ne 1 ]]; then
+    echo "Expected exactly one canonical SupraCraft VanillaCord jar in artifacts/, found ${#canonical_jars[@]}." >&2
+    printf '%s\n' "${canonical_jars[@]}" >&2
+    exit 1
+  fi
+  JAR_PATH="${canonical_jars[0]}"
+fi
+
 MANIFEST_URL="${MINECRAFT_MANIFEST_URL:-https://piston-meta.mojang.com/mc/game/version_manifest_v2.json}"
 REQUIRED_SUPPORTED="${VANILLACORD_REQUIRED_SUPPORTED-1.21.11 1.20.6 1.20.4 1.19.4 1.18.2}"
 BEST_EFFORT_LEGACY="${VANILLACORD_BEST_EFFORT_LEGACY-1.17.1 1.16.5 1.12.2 1.8.9 1.7.10}"
@@ -201,7 +212,6 @@ run_probe() {
     return
   fi
 
-  # Never accept stale output from an earlier probe as evidence for this run.
   rm -f "$output_jar"
 
   echo "Patching Minecraft $version ($tier)"

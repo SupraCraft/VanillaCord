@@ -12,128 +12,102 @@ Runtime invariants remain unchanged: Java 21 bytecode, generated provenance mani
 
 ## Tranche A — Maven 3 packaging/tooling baseline
 
-PR: #18
-Status: **merged**
+PR: #18  
+Status: **merged**  
 Merge commit: `a5f0af09b1034c5af11e22cdcd24e96d66788f38`
 
-Implemented and proven:
-
-- artifact-contract script and sorted JAR inventory
-- Assembly `3.8.0`, Compiler `3.15.0`, Surefire `3.5.6`, Versions `2.21.0`, Enforcer `3.6.3`
-- Maven `[3.9.0,4.0.0)` and Java `21+` enforcement
-- removed Antrun from VanillaCord
-- standard Maven LICENSE resources
-- explicit UTF-8
-- focused latest-stable Minecraft patch+boot gate on build-system changes
+Implemented and proven: artifact contract/inventory; Assembly `3.8.0`; Compiler `3.15.0`; Surefire `3.5.6`; Versions `2.21.0`; Enforcer `3.6.3`; Maven/Java baselines; UTF-8; Antrun removal; standard LICENSE resources; focused stable patch+boot gating.
 
 ## Tranche B — Maven Wrapper
 
-PR: #19
-Status: **merged**
+PR: #19  
+Status: **merged**  
 Merge commit: `05018b4405de225c338710e001c99320e0c63071`
 
-Implemented and proven:
-
-- official Apache Maven Wrapper `3.3.4`
-- Maven `3.9.16` pinned
-- build, release, and compatibility paths use `./mvnw`
-- JDK 21 and JDK 25 CI assert Maven `3.9.16`
-- Maven/wrapper versions recorded in build metadata
-- artifact contract and current-stable Minecraft patch/integrity/boot passed through the wrapper
+Implemented and proven: Apache Maven Wrapper `3.3.4`; Maven `3.9.16`; wrapper authoritative in build/release/compatibility paths; JDK 21/JDK 25 Maven assertions; wrapper provenance recorded.
 
 ## Tranche C — SupraCraft artifact identity and immutable development versions
 
-Bridge producer prerequisite:
+Bridge PR #3 merged as `3accd1ad5548e0b16a58e0665b9c40953c6124ef` with canonical `io.github.supracraft.bridge` coordinates and immutable `0.1.0-dev.<run>` CI versions.
 
-- Bridge PR #3 merged as `3accd1ad5548e0b16a58e0665b9c40953c6124ef`
-- canonical Bridge group `io.github.supracraft.bridge`
-- canonical Bridge source line `0.1.0-dev`
-- immutable CI versions `0.1.0-dev.<run>`
-- source/upstream provenance separated in manifests and build evidence
+VanillaCord PR #20 merged as `303d2af90a3c7b6afbebe334ce62ddc1cf626d76` with:
 
-VanillaCord PR #20:
-Status: **merged**
-Merge commit: `303d2af90a3c7b6afbebe334ce62ddc1cf626d76`
+- canonical `io.github.supracraft.vanillacord:vanillacord`
+- source line `2.9.0-dev`
+- CI `2.9.0-dev.<run>`, RC `2.9.0-rc.N`, stable `2.9.0`
+- canonical Bridge coordinates
+- standalone `supracraft-vanillacord-<version>.jar`
+- separate SupraCraft source and ME1312 upstream provenance
+- neutral `vanillacord.*` Java packages retained.
 
-Implemented and proven:
+### Tranche C.1 — retire legacy standalone alias
 
-- canonical Maven coordinate `io.github.supracraft.vanillacord:vanillacord`
-- checked-in source line `2.9.0-dev`
-- immutable CI form `2.9.0-dev.<run>`; no fake `SNAPSHOT.<run>` terminology
-- RC form `2.9.0-rc.N`; stable form `2.9.0`
-- Bridge dependencies/plugin under `io.github.supracraft.bridge`
-- source-pinned exact Bridge baseline and canonical dev resolver
-- canonical standalone JAR `supracraft-vanillacord-<version>.jar`
-- JAR manifest and build metadata distinguish SupraCraft source identity from ME1312 upstream lineage
-- Java packages remain neutral `vanillacord.*`
+PR #21 merged as `f6649e4c4a12c42d2e95f95963d60e0d6b7a2bee`.
 
-## Tranche C.1 — retire legacy standalone alias
-
-PR: #21
-Status: **merged**
-Merge commit: `f6649e4c4a12c42d2e95f95963d60e0d6b7a2bee`
-
-Implemented and proven:
-
-- stopped creating or publishing `VanillaCord.jar`
-- CI requires the legacy alias to be absent from build/release output
-- checksums and uploads cover only the canonical versioned SupraCraft JAR
-- compatibility harness no longer defaults to the legacy filename; it discovers exactly one canonical JAR or fails on ambiguity
-- README and artifact-identity policy make the versioned filename exclusive for new builds
-- JDK 21 artifact/provenance lane passed
-- JDK 25 current-stable Minecraft patch/integrity/boot passed using the canonical JAR
+- stopped creating/publishing `VanillaCord.jar`
+- CI asserts the alias is absent
+- compatibility harness discovers exactly one canonical SupraCraft JAR when no path is supplied
+- JDK 21 artifact/provenance and JDK 25 current-stable patch/integrity/boot gates passed.
 
 ## Bridge build modernization and standalone naming
 
-Bridge PR #6:
-Status: **merged**
-Merge commit: `ee3c7a89fdb9a2d822dbf332650d610b350eab10`
+Bridge PR #6 merged as `ee3c7a89fdb9a2d822dbf332650d610b350eab10`:
 
-- Apache Maven Wrapper `3.3.4` / Maven `3.9.16`
-- modern stable build plugins, UTF-8, Enforcer, and Antrun removal
-- wrapper authoritative in CI/publish paths
-- documentation-only pushes do not create meaningless new dev coordinates
+- Maven Wrapper `3.3.4` / Maven `3.9.16`
+- stable plugin modernization, UTF-8, Enforcer, Antrun removal
+- wrapper authoritative; documentation-only pushes do not publish meaningless dev coordinates.
 
-Bridge PR #7:
-Status: **merged**
-Merge commit: `bfbbe3f3e87114d6d1cb7623e6c0455951a233c1`
+Bridge PR #7 merged as `bfbbe3f3e87114d6d1cb7623e6c0455951a233c1`:
 
-- Maven repository layout stays conventional
-- Actions/release downloads use explicit `supracraft-bridge-*`, `supracraft-bridge-asm-*`, and `supracraft-bridge-plugin-*` filenames
-- versioned SupraCraft SBOM plus metadata/checksums accompany standalone files
+- Maven repository layout remains conventional
+- Actions/releases expose `supracraft-bridge-*`, `supracraft-bridge-asm-*`, and `supracraft-bridge-plugin-*`
+- versioned SupraCraft SBOM, metadata, and checksums accompany standalone files.
 
 ## Tranche D — reproducible canonical JARs
 
-Branch: `modernize/reproducible-builds-v2`
+PR: #22  
+Status: **merged**  
+Merge commit: `165f188fccfe8cb6b531666749f9a155cba933d3`
+
+Implemented and proven:
+
+- fixed `project.build.outputTimestamp` at `2000-01-01T00:00:00Z`
+- normal validated build is reproducibility sample one; one clean rebuild is sample two
+- both use the same effective version, exact Bridge coordinate, source provenance, build number, Maven Wrapper, JDK lane, and archive timestamp
+- canonical JARs must be byte-identical and have identical SHA-256
+- mismatch diagnostics retain entry lists and ZIP metadata
+- `REPRODUCIBILITY.properties` records proven JAR hash and exact Bridge input
+- release path performs the same proof before publication
+- JDK 21 build/artifact contract passed after the clean rebuild
+- JDK 25 current-stable Minecraft patch/integrity/boot remained green.
+
+CycloneDX byte-for-byte reproducibility is intentionally out of scope; the executable JAR is the reproducibility target while SBOM semantic/dependency evidence remains retained.
+
+## Tranche D.1 — align compatibility gating semantics
+
+Branch: `modernize/snapshot-advisory-semantics`  
 Status: **validation in progress**
+
+Problem found during red-team cleanup: the strategy correctly described current Minecraft snapshots/RCs as advisory, but the script appended the snapshot to a generic required list, so a development failure could make the scheduled command exit nonzero.
 
 Implemented:
 
-- fixed Maven `project.build.outputTimestamp` at canonical `2000-01-01T00:00:00Z`
-- added `scripts/verify-reproducible-build.sh`
-- reuse the normal validated build as sample one, then perform one clean rebuild as sample two
-- both builds use the same effective VanillaCord version, exact Bridge coordinate, source commit/ref/build number, Maven Wrapper, JDK lane, and archive timestamp
-- compare canonical JARs byte-for-byte and by SHA-256
-- retain entry-list and ZIP-metadata diagnostics when hashes differ
-- emit `REPRODUCIBILITY.properties` containing the proven JAR SHA and exact Bridge input
-- release path performs the same proof before publishing
+- `current-stable`: blocking
+- `required-supported`: blocking when requested
+- `current-development`: advisory
+- `best-effort`: advisory
+- separate blocking/advisory failure accumulators
+- report rows include explicit `Policy` as well as `Tier`
+- advisory failures remain visible and warn on stderr but do not independently produce a failing exit code
+- strategy documentation now describes the executable policy rather than relying on implied semantics.
 
-Scope intentionally excludes byte-for-byte CycloneDX reproducibility for now. The SBOM can contain generator metadata such as serial identifiers/timestamps; its semantic contents and exact dependency coordinate remain evidence, while this tranche proves the executable JAR itself is reproducible.
-
-Required merge evidence:
-
-- normal JDK 21 build/test succeeds
-- clean rebuild produces byte-identical canonical JAR
-- artifact contract still passes on the rebuilt JAR
-- JDK 25 current-stable Minecraft patch/integrity/boot remains green
-
-After initial proof, retain the fixed timestamp permanently. Re-evaluate whether the two-build comparison belongs on every source PR or should be limited to packaging/toolchain/release lanes to conserve public Actions resources without weakening release assurance.
+Required merge evidence: focused PR stable patch/integrity/boot remains green and ordinary build/reproducibility validation remains green.
 
 ## Tranche E — dependency freshness
 
-Status: pending reproducibility baseline
+Status: pending sentinel cleanup
 
-Bundled implementation dependencies, provided Minecraft/runtime APIs, Bridge, and test-only dependencies are reviewed as separate risk classes rather than updated as one bulk operation.
+Bundled implementation dependencies, provided Minecraft/runtime APIs, Bridge, and test-only dependencies will be reviewed as separate risk classes rather than updated as one bulk operation.
 
 ## Deferred
 

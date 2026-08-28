@@ -59,6 +59,7 @@
   },
   "public_surface": {
     "github_metadata": "GITHUB_METADATA.json",
+    "metadata_apply": "scripts/apply-github-metadata.py",
     "pages_entrypoint": "docs/index.html",
     "pages_url": "https://supracraft.github.io/VanillaCord/",
     "upstream_attribution_required": true

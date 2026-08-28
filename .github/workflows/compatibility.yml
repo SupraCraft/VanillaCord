@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [master, main]
     paths:
+      - 'java/**'
+      - 'pom.xml'
       - 'scripts/check-minecraft-compatibility.sh'
       - '.github/workflows/compatibility.yml'
   workflow_dispatch:
@@ -68,8 +70,8 @@ jobs:
       - name: Configure pull request scope
         if: github.event_name == 'pull_request'
         run: |
-          # Exercise changes to the compatibility harness itself without paying
-          # for snapshot or historical regression coverage on every review.
+          # Runtime-affecting code changes must prove the current stable server can
+          # still be patched and booted, without paying for snapshot/history on PRs.
           echo "VANILLACORD_INCLUDE_SNAPSHOT=false" >> "$GITHUB_ENV"
           echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"

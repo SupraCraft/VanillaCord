@@ -9,10 +9,6 @@ on:
       - '.github/workflows/prune-merged-branches.yml'
   push:
     branches: [master]
-    paths:
-      - 'scripts/prune-merged-branches.sh'
-      - 'maintenance/retired-branch-exceptions.tsv'
-      - '.github/workflows/prune-merged-branches.yml'
   workflow_dispatch:
 
 permissions:

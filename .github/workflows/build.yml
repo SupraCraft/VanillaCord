@@ -79,7 +79,9 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VER="${GITHUB_REF_NAME#v}"
           else
-            VER="0.1.0-SNAPSHOT.${GITHUB_RUN_NUMBER}"
+            SOURCE_VERSION="$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)"
+            BASE_VERSION="${SOURCE_VERSION%%-SNAPSHOT*}"
+            VER="${BASE_VERSION}-SNAPSHOT.${GITHUB_RUN_NUMBER}"
           fi
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 

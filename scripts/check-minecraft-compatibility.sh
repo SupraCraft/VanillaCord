@@ -6,6 +6,8 @@ MANIFEST_URL="${MINECRAFT_MANIFEST_URL:-https://piston-meta.mojang.com/mc/game/v
 REQUIRED_SUPPORTED="${VANILLACORD_REQUIRED_SUPPORTED-1.21.11 1.20.6 1.20.4 1.19.4 1.18.2}"
 BEST_EFFORT_LEGACY="${VANILLACORD_BEST_EFFORT_LEGACY-1.17.1 1.16.5 1.12.2 1.8.9 1.7.10}"
 INCLUDE_SNAPSHOT="${VANILLACORD_INCLUDE_SNAPSHOT:-true}"
+BOOT_SMOKE="${VANILLACORD_BOOT_SMOKE:-false}"
+BOOT_TIMEOUT_SECONDS="${VANILLACORD_BOOT_TIMEOUT_SECONDS:-120}"
 REPORT_PATH="${VANILLACORD_COMPAT_REPORT:-docs/minecraft-compatibility-report.md}"
 
 if [[ "$REQUIRED_SUPPORTED" == "none" || "$REQUIRED_SUPPORTED" == "-" ]]; then
@@ -97,6 +99,7 @@ done
   echo "- Required supported matrix: \`$REQUIRED_SUPPORTED\`"
   echo "- Best-effort legacy matrix: \`$BEST_EFFORT_LEGACY\`"
   echo "- Include snapshot/RC: \`$INCLUDE_SNAPSHOT\`"
+  echo "- Boot latest stable: \`$BOOT_SMOKE\`"
   echo
   echo "| Tier | Version | Result |"
   echo "| --- | --- | --- |"
@@ -112,6 +115,78 @@ record_failure() {
   else
     best_effort_failed=1
   fi
+}
+
+boot_smoke() {
+  local version="$1"
+  local output_jar="$2"
+  local workdir
+  local pid
+  local elapsed=0
+
+  workdir="$(mktemp -d)"
+  cp "$output_jar" "$workdir/server.jar"
+  printf 'eula=true\n' > "$workdir/eula.txt"
+  cat > "$workdir/server.properties" <<'EOF'
+online-mode=false
+enforce-secure-profile=false
+server-ip=127.0.0.1
+server-port=25565
+motd=VanillaCord compatibility smoke test
+level-name=world
+view-distance=2
+simulation-distance=2
+spawn-protection=0
+EOF
+
+  mkfifo "$workdir/server.in"
+  exec 9<>"$workdir/server.in"
+  (
+    cd "$workdir" || exit 1
+    java -Xms256M -Xmx1536M -jar server.jar nogui <&9 >server.log 2>&1
+  ) &
+  pid=$!
+
+  while (( elapsed < BOOT_TIMEOUT_SECONDS )); do
+    if grep -Eq 'Done \([^)]*\)!|Done \(' "$workdir/server.log" 2>/dev/null; then
+      printf 'stop\n' >&9 || true
+      for _ in $(seq 1 30); do
+        if ! kill -0 "$pid" 2>/dev/null; then
+          break
+        fi
+        sleep 1
+      done
+      if kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null || true
+      fi
+      wait "$pid" 2>/dev/null || true
+      exec 9>&-
+      rm -rf "$workdir"
+      return 0
+    fi
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+      echo "Minecraft $version exited before reaching the startup marker." >&2
+      tail -n 80 "$workdir/server.log" >&2 || true
+      wait "$pid" 2>/dev/null || true
+      exec 9>&-
+      rm -rf "$workdir"
+      return 1
+    fi
+
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+
+  echo "Minecraft $version did not reach the startup marker within ${BOOT_TIMEOUT_SECONDS}s." >&2
+  tail -n 80 "$workdir/server.log" >&2 || true
+  printf 'stop\n' >&9 || true
+  sleep 2
+  kill "$pid" 2>/dev/null || true
+  wait "$pid" 2>/dev/null || true
+  exec 9>&-
+  rm -rf "$workdir"
+  return 1
 }
 
 run_probe() {
@@ -145,6 +220,17 @@ run_probe() {
   if ! jar tf "$output_jar" >/dev/null 2>&1; then
     echo "| $tier | \`$version\` | patched output is not a readable jar |" >> "$REPORT_PATH"
     record_failure "$required"
+    return
+  fi
+
+  if [[ "$BOOT_SMOKE" == "true" && "$version" == "$latest_release" ]]; then
+    echo "Booting patched Minecraft $version"
+    if ! boot_smoke "$version" "$output_jar"; then
+      echo "| $tier | \`$version\` | boot smoke failed |" >> "$REPORT_PATH"
+      record_failure "$required"
+      return
+    fi
+    echo "| $tier | \`$version\` | pass (patch + jar integrity + boot) |" >> "$REPORT_PATH"
     return
   fi
 

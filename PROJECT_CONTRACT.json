@@ -42,6 +42,14 @@
       "best-effort": "advisory"
     }
   },
+  "diagnostics": {
+    "transport": "stdout-stderr",
+    "stable_event_ids": true,
+    "event_catalog": "docs/diagnostics.md",
+    "authoritative_failure_signal": "process-exit-code",
+    "progress_stream": "stdout",
+    "failure_stream": "stderr"
+  },
   "provenance": {
     "source_repository": "SupraCraft/VanillaCord",
     "upstream_repository": "ME1312/VanillaCord",
@@ -57,6 +65,7 @@
     "versioning": "VERSIONING.md",
     "compatibility_policy": "COMPATIBILITY_STRATEGY.md",
     "compatibility_operations": "docs/compatibility.md",
+    "diagnostics": "docs/diagnostics.md",
     "modernization_ledger": "docs/build-modernization-status.md",
     "historical_modernization_record": "MODERNIZATION_PLAN.md"
   }

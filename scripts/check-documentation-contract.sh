@@ -10,6 +10,7 @@ required=(
   COMPATIBILITY_STRATEGY.md
   docs/DOCUMENTATION_POLICY.md
   docs/compatibility.md
+  docs/artifact-retention.md
 )
 for path in "${required[@]}"; do
   test -s "$path" || { echo "Missing required documentation surface: $path" >&2; exit 1; }
@@ -32,6 +33,7 @@ assert contract['validation']['compatibility_tiers'] == {
     'current-development': 'advisory',
     'best-effort': 'advisory',
 }
+assert contract['documentation']['artifact_retention'] == 'docs/artifact-retention.md'
 
 root = ET.parse('pom.xml').getroot()
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
@@ -48,6 +50,25 @@ match = re.search(r'apache-maven-([0-9.]+)-bin', wrapper)
 assert match, 'Unable to determine Maven version from wrapper properties'
 assert contract['toolchain']['maven'] == match.group(1)
 
+def workflow_retention(path, step_name):
+    workflow = Path(path).read_text(encoding='utf-8')
+    step = re.search(
+        rf'- name: {re.escape(step_name)}(?P<body>.*?)(?=\n\s+- name:|\Z)',
+        workflow,
+        re.DOTALL,
+    )
+    assert step, f'{path}: missing step {step_name!r}'
+    retention = re.search(r'retention-days:\s*(\d+)', step.group('body'))
+    assert retention, f'{path}: step {step_name!r} has no retention-days'
+    return int(retention.group(1))
+
+retention = contract['retention']
+assert workflow_retention('.github/workflows/build.yml', 'Upload reproducibility diagnostics on failure') == int(retention['actions_reproducibility_diagnostics_days'])
+assert workflow_retention('.github/workflows/build.yml', 'Upload build evidence') == int(retention['actions_build_evidence_days'])
+assert workflow_retention('.github/workflows/compatibility.yml', 'Upload compatibility report') == int(retention['actions_compatibility_report_days'])
+assert retention['release_assets'] == 'durable-historical-provenance'
+assert retention['bridge_package_cleanup'] == 'owned-by-SupraCraft/Bridge-retention-policy'
+
 # The retired path may appear only in an explicit negative/historical warning.
 for path in [Path('README.md'), Path('AGENTS.md'), Path('docs/compatibility.md'), Path('docs/bridge-dependency.md')]:
     for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
@@ -63,6 +84,7 @@ active_docs=(
   PROJECT_CONTRACT.json
   docs/compatibility.md
   docs/bridge-dependency.md
+  docs/artifact-retention.md
 )
 
 if grep -nHE '0\.1\.0-dev\.[0-9]+' "${active_docs[@]}"; then

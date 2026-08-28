@@ -34,7 +34,10 @@ require_entry 'LICENSE'
 forbid_entry 'com/mojang/authlib/GameProfile.class'
 forbid_entry 'io/netty/buffer/ByteBuf.class'
 
-unzip -p "$jar_path" META-INF/MANIFEST.MF >/tmp/vanillacord-manifest.mf \
+# JAR manifests are specified with CRLF line endings. Normalize them before
+# exact-line assertions so the contract remains strict without depending on
+# the host text conventions used by grep.
+unzip -p "$jar_path" META-INF/MANIFEST.MF | tr -d '\r' >/tmp/vanillacord-manifest.mf \
   || fail "cannot read generated manifest"
 
 grep -Fqx 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf \

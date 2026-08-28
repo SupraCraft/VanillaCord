@@ -12,6 +12,7 @@ public class SourceScanner extends HierarchyScanner {
     private final Package file;
     private ClassData data;
     private boolean hasTID;
+    private int loginStrength;
 
     public SourceScanner(Package file) {
         super(Opcodes.ASM9, file.types);
@@ -47,22 +48,27 @@ public class SourceScanner extends HierarchyScanner {
                         file.sources.startup = selectUnique("startup", file.sources.startup, data);
                         System.out.print("Found the dedicated server: ");
                         System.out.println(SourceScanner.super.name);
-                    } else if (isLoginHello(text)) {
-                        file.sources.login = selectUnique("login", file.sources.login, data);
-                        System.out.print("Found the login listener: ");
-                        System.out.println(SourceScanner.super.name);
-                    } else if (hasTID && isPayloadTooLarge(text)) {
-                        System.out.print("Found a login extension packet: ");
-                        System.out.println(SourceScanner.super.name);
-                        if (file.sources.send == null) {
-                            file.sources.send = data;
-                        } else {
-                            file.sources.receive = data;
+                    } else {
+                        int strength = loginSignalStrength(text);
+                        if (strength != 0) {
+                            selectLogin(data, strength);
+                            System.out.print(strength == 1
+                                    ? "Found the login listener (fallback): "
+                                    : "Found the login listener: ");
+                            System.out.println(SourceScanner.super.name);
+                        } else if (hasTID && isPayloadTooLarge(text)) {
+                            System.out.print("Found a login extension packet: ");
+                            System.out.println(SourceScanner.super.name);
+                            if (file.sources.send == null) {
+                                file.sources.send = data;
+                            } else {
+                                file.sources.receive = data;
+                            }
+                        } else if (isHandshakeDisconnect(text)) {
+                            file.sources.handshake = selectUnique("handshake", file.sources.handshake, data);
+                            System.out.print("Found the handshake listener: ");
+                            System.out.println(SourceScanner.super.name);
                         }
-                    } else if (isHandshakeDisconnect(text)) {
-                        file.sources.handshake = selectUnique("handshake", file.sources.handshake, data);
-                        System.out.print("Found the handshake listener: ");
-                        System.out.println(SourceScanner.super.name);
                     }
                 }
                 super.visitLdcInsn(value);
@@ -70,23 +76,42 @@ public class SourceScanner extends HierarchyScanner {
         };
     }
 
+    private void selectLogin(MethodData candidate, int strength) {
+        MethodData current = file.sources.login;
+        if (current == null || current == candidate || strength > loginStrength) {
+            file.sources.login = candidate;
+            loginStrength = Math.max(loginStrength, strength);
+            return;
+        }
+        if (strength < loginStrength) {
+            return;
+        }
+        throw ambiguity("login", current, candidate);
+    }
+
     private static MethodData selectUnique(String hook, MethodData current, MethodData candidate) {
         if (current == null || current == candidate) {
             return candidate;
         }
-        throw new IllegalStateException("Ambiguous " + hook + " hook candidates: "
+        throw ambiguity(hook, current, candidate);
+    }
+
+    private static IllegalStateException ambiguity(String hook, MethodData current, MethodData candidate) {
+        return new IllegalStateException("Ambiguous " + hook + " hook candidates: "
                 + current.name + current.descriptor + " and " + candidate.name + candidate.descriptor);
     }
 
-    private static boolean isLoginHello(String text) {
+    private static int loginSignalStrength(String text) {
         String lower = text.toLowerCase(Locale.ROOT);
         if (lower.contains("acknowledg")) {
-            return false;
+            return 0;
         }
-        return lower.contains("unexpected hello")
-                || lower.contains("unexpected login")
+        if (lower.contains("unexpected hello")
                 || lower.contains("hello packet")
-                || lower.contains("received hello twice");
+                || lower.contains("received hello twice")) {
+            return 2;
+        }
+        return lower.contains("unexpected login") ? 1 : 0;
     }
 
     private static boolean isPayloadTooLarge(String text) {

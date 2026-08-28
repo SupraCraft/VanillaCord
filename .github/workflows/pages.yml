@@ -9,6 +9,7 @@ on:
       - 'GITHUB_METADATA.json'
       - 'docs/**'
       - 'scripts/build-public-site.py'
+      - 'scripts/check-public-site.py'
       - '.github/workflows/pages.yml'
   release:
     types: [published]
@@ -33,6 +34,8 @@ jobs:
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
       - name: Build public site
         run: python3 ./scripts/build-public-site.py --output build/public-site
+      - name: Validate built public site
+        run: python3 ./scripts/check-public-site.py --site-dir build/public-site
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
@@ -45,6 +48,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+      - name: Smoke deployed public site
+        run: python3 ./scripts/check-public-site.py --base-url "${{ steps.deployment.outputs.page_url }}"

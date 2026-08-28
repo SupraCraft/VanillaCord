@@ -22,6 +22,7 @@ required=(
   resources/META-INF/supracraft/vanillacord/icon.svg
   scripts/apply-github-metadata.py
   scripts/build-public-site.py
+  scripts/check-public-site.py
   .github/workflows/pages.yml
 )
 for path in "${required[@]}"; do
@@ -43,6 +44,7 @@ profile = json.loads(Path('BRAND_PROFILE.json').read_text(encoding='utf-8'))
 metadata = json.loads(Path('GITHUB_METADATA.json').read_text(encoding='utf-8'))
 brand = json.loads(Path('docs/assets/brand/brand.json').read_text(encoding='utf-8'))
 page = Path('docs/index.html').read_text(encoding='utf-8')
+pages_workflow = Path('.github/workflows/pages.yml').read_text(encoding='utf-8')
 
 assert contract['repository'] == 'SupraCraft/VanillaCord'
 assert contract['artifact']['maven'] == 'io.github.supracraft.vanillacord:vanillacord:<version>'
@@ -59,6 +61,7 @@ assert profile['identity']['bridge_visible_in_user_identity'] is False
 assert profile['packaged_resources']['source_path'] == 'resources/META-INF/supracraft/vanillacord/icon.svg'
 assert contract['bridge']['user_identity_visibility'] == 'implementation-detail-not-part-of-brand'
 assert contract['validation']['public_site_builder'] == 'scripts/build-public-site.py'
+assert contract['validation']['public_site_check'] == 'scripts/check-public-site.py'
 assert contract['validation']['compatibility_tiers'] == {
     'current-stable': 'blocking',
     'required-supported': 'blocking-when-requested',
@@ -90,6 +93,9 @@ assert 'ME1312/VanillaCord' in page
 assert 'SupraCraft/Bridge' not in page
 assert metadata['homepage'] in page
 assert metadata['description'] in page
+assert 'scripts/check-public-site.py' in pages_workflow
+assert '--site-dir build/public-site' in pages_workflow
+assert '--base-url "${{ steps.deployment.outputs.page_url }}"' in pages_workflow
 
 root = ET.parse('pom.xml').getroot()
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
@@ -127,6 +133,7 @@ assert retention['bridge_package_cleanup'] == 'owned-by-SupraCraft/Bridge-retent
 
 with tempfile.TemporaryDirectory() as tmp:
     subprocess.run(['python3', 'scripts/build-public-site.py', '--output', tmp], check=True)
+    subprocess.run(['python3', 'scripts/check-public-site.py', '--site-dir', tmp], check=True)
     out = Path(tmp)
     for name in contract['public_surface']['machine_endpoints']:
         assert (out / name).is_file(), f'missing generated endpoint: {name}'

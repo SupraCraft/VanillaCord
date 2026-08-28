@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.2.0",
+  "schema_version": "1.3.0",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
@@ -45,6 +45,7 @@
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
     "documentation_contract": "scripts/check-documentation-contract.sh",
     "public_site_builder": "scripts/build-public-site.py",
+    "public_site_check": "scripts/check-public-site.py",
     "compatibility_tiers": {
       "current-stable": "blocking",
       "required-supported": "blocking-when-requested",

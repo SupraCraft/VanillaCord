@@ -1,75 +1,94 @@
 # Minecraft Compatibility Strategy
 
-Last reviewed: 2026-06-18
+Last reviewed: 2026-08-28
 
-## Current Findings
+## Purpose
 
-VanillaCord is a bytecode patcher that tries to stay version-independent by
-discovering obfuscated Minecraft server classes at patch time. It does not use
-named Minecraft mappings or a per-version adapter table today.
+VanillaCord is a bytecode patcher that discovers obfuscated Minecraft server
+classes at patch time. Compatibility assurance should therefore answer one
+question with the least machinery necessary:
 
-Important implementation points:
+> Does the current VanillaCord build still patch and operate against the
+> Minecraft versions that matter?
+
+The strategy deliberately favors deterministic, stateless checks over a
+compatibility-management service. The monitor observes and reports; it does not
+modify VanillaCord code automatically.
+
+## Current Architecture
 
 - `Downloader` reads Mojang's `version_manifest_v2.json`, downloads a requested
   server jar, verifies Mojang's SHA-1 metadata, and patches it.
 - `Patcher` distinguishes modern bundled server jars from older fat jars by
   checking `Bundler-Format` in `META-INF/MANIFEST.MF`.
-- `SourceScanner` discovers patch targets by looking for stable string
-  constants such as `Server console handler`, login hello diagnostics, payload
-  size diagnostics, and handshake disconnect text.
-- Login extension support has version-era branches for older mutable packet
+- `SourceScanner` discovers patch targets using string and structural signals.
+- Login extension support contains version-era handling for older mutable packet
   classes, constructor-based packets, and modern record/interface packet shapes.
-- The README currently claims broad support through `1.21`, but Mojang's
-  current release line has moved to calendar versions.
+- Current Minecraft compatibility probes run with JDK 25; VanillaCord currently
+  emits Java 21 bytecode for its own classes.
 
-As of the latest deployment validation, Mojang's manifest reports:
+## Evidence From Prior Failures
 
-- latest stable release: `26.2`
-- latest snapshot/RC: not rechecked during the final deployment pass
-- current Minecraft/Paper server runtime line requires Java 25; run
-  compatibility probes with JDK 25 even though VanillaCord currently emits Java
-  21 bytecode for its own classes.
+The compatibility system must test more than a successful patcher exit code.
 
-Additional finding from the 2026-06-16 production fix:
+During the 2026-06 production fix, VanillaCord `v2.3` could read Java 25-era
+classes but failed while patching current 26.x login flow. A partially written
+bundled jar was cached and later failed at boot because a Minecraft class was
+missing. The scanner also selected `handleLoginAcknowledgement` because
+`Unexpected login acknowledgement packet` matched the loose `unexpected login`
+heuristic. The subsequent fix excluded acknowledgement text and adapted to the
+current offline-profile shape.
 
-- VanillaCord `v2.3` could read Java 25-era classes but failed while patching
-  current 26.x login flow. The partially written bundled jar was cached by the
-  vanilla server container and later failed at boot with a missing
-  `net/minecraft/server/permissions/PermissionSet` class.
-- The scanner was selecting `handleLoginAcknowledgement` because the string
-  `Unexpected login acknowledgement packet` matched the loose
-  `unexpected login` heuristic. `v2.4` excludes acknowledgement text from login
-  hello discovery and handles the current offline-profile call shape.
-- The vanilla CapRover image now deletes partial `out/<version>.jar` files on
-  failed VanillaCord installs to avoid reusing broken output.
+These incidents demonstrate two distinct risks:
 
-## Risk Areas
+1. patch output can be structurally invalid even when significant patch work has
+   completed; and
+2. heuristic source discovery can select the wrong target while still looking
+   superficially plausible.
 
-1. Discovery by string literals can break when Mojang changes diagnostics,
-   translations, or control flow.
-2. Login plugin message packet shapes have changed several times and are likely
-   to change again.
-3. The patchers fail late. Missing hook-point discovery is often observed as an
-   injection or generated-helper failure instead of a clear compatibility
-   report.
-4. The release workflow builds a jar, but it has not historically gated releases
-   on real Minecraft server jars.
-5. The project lacks a generated support matrix, so documentation can drift from
-   reality.
+## Red-Team Decision
+
+The project should build a **compatibility sentinel**, not a compatibility
+platform.
+
+High-value automation:
+
+- periodically resolve Mojang's latest stable and snapshot/RC;
+- build VanillaCord and patch those current versions;
+- preserve a human-readable compatibility report and workflow diagnostics;
+- keep current stable blocking and development snapshots as early warning;
+- retain a manually triggered maintained/legacy matrix for regressions;
+- add patch-output integrity, boot, and forwarding smoke checks incrementally.
+
+Explicit non-goals unless future evidence justifies them:
+
+- autonomous code repair;
+- per-version adapter tables or named mappings solely for monitoring;
+- a compatibility database or persistent scheduler state;
+- committing a new report file for every Mojang snapshot;
+- automatically opening and closing issues for every transient probe failure;
+- running the entire historical matrix every day;
+- implementing a general-purpose Minecraft test client when a narrower
+  forwarding-boundary probe is sufficient.
 
 ## Support Tiers
 
-### Required Current
+### Tier A: Current Stable
 
-These must pass before a release is considered usable:
+The latest Mojang stable release from `version_manifest_v2.json` is the primary
+compatibility target. A failure is release-blocking once the probe includes the
+required behavioral checks.
 
-- latest Mojang stable release from `version_manifest_v2.json`
-- latest Mojang snapshot/RC from `version_manifest_v2.json` when snapshot checks
-  are enabled
+### Tier B: Current Development
 
-### Required Supported
+The latest Mojang snapshot, release candidate, or pre-release is an early-warning
+target. Failure should be visible but should not by itself prevent releasing a
+VanillaCord build known to work with stable Minecraft.
 
-Representative versions that should stay supported until intentionally retired:
+### Tier C: Maintained Regression Fixtures
+
+Representative older versions remain available for manual/release regression
+checks when VanillaCord itself changes:
 
 - `1.21.11`
 - `1.20.6`
@@ -77,11 +96,9 @@ Representative versions that should stay supported until intentionally retired:
 - `1.19.4`
 - `1.18.2`
 
-### Best Effort Legacy
+### Best-Effort Legacy
 
-Older versions from the historical README claim. Failures should be reported but
-should not block normal releases until a maintainer promotes a version back to
-required support.
+These historical targets are diagnostic only unless intentionally promoted:
 
 - `1.17.1`
 - `1.16.5`
@@ -89,81 +106,101 @@ required support.
 - `1.8.9`
 - `1.7.10`
 
-## Execution Plan
+## Execution Model
 
-1. Add a repeatable compatibility probe.
-   - Build `artifacts/VanillaCord.jar`.
-   - Resolve latest stable and latest snapshot from Mojang's manifest.
-   - Patch each required version one at a time.
-   - Patch best-effort versions and report failures without blocking.
+### Scheduled sentinel
 
-2. Add conservative GitHub Actions compatibility checks.
-   - Run manually with `workflow_dispatch`.
-   - Do not run on a schedule by default to conserve GitHub Actions minutes on
-     the free tier.
-   - Upload the probe report as an artifact.
+`.github/workflows/compatibility.yml` runs daily. It is intentionally stateless:
+it tests current stable plus current snapshot/RC on every scheduled execution
+rather than maintaining a database of previously seen Mojang versions.
 
-3. Improve diagnostics.
-   - Add a source-discovery summary before patching.
-   - Fail with explicit missing fields such as `startup`, `handshake`, `login`,
-     `send`, `receive`, and `connection`.
+This spends a small amount of public-runner compute to avoid persistent state,
+write permissions, synchronization logic, and repository churn. Concurrency is
+bounded so a newer run cancels a redundant in-progress run.
 
-4. Add adapter boundaries.
-   - Keep heuristic discovery, but isolate version-era login extension behavior
-     behind small adapter classes.
-   - Avoid adding more large conditional branches inside translation emitters.
+### Manual regression matrix
 
-5. Gate releases.
-   - The release workflow should run the compatibility probe for required
-     current and required supported versions before uploading `VanillaCord.jar`.
-   - Release notes should list the versions tested by CI.
+`workflow_dispatch` retains the maintained and best-effort matrices. Maintainers
+can override the version sets and snapshot inclusion without changing repository
+state.
 
-6. Update documentation.
-   - Replace broad README support claims with a tested support table generated
-     from the compatibility workflow output.
+### Reports
 
-## First Milestone
+Compatibility reports are emitted to the GitHub Actions job summary and retained
+as workflow artifacts. The scheduled sentinel has read-only repository/package
+permissions and does not commit generated reports back to `master`.
 
-The first milestone is now started by adding:
+## Validation Ladder
 
-- `scripts/check-minecraft-compatibility.sh`
-- `scripts/Invoke-CompatibilityProbe.ps1`
-- `.github/workflows/compatibility.yml`
-- ASM `9.10.1` so the patcher can read current Java 25-era class files.
+Compatibility confidence should be added in this order, stopping when additional
+layers cost more to maintain than the failures they prevent:
 
-These provide real patching signal against current Mojang releases and the
-maintained matrix before deeper code refactoring.
+1. **Patch** — VanillaCord exits successfully for the target Minecraft version.
+2. **Integrity** — the expected patched output exists and is a readable jar.
+3. **Boot** — the patched server reaches a known-good startup boundary in an
+   ephemeral working directory and is terminated cleanly.
+4. **Forwarding smoke** — a minimal proxy/login fixture proves the VanillaCord
+   forwarding path accepts correct forwarded identity and rejects invalid
+   forwarding data.
 
-## Current Release Status
+The test fixture should stop at the forwarding boundary. It should not emulate
+normal Minecraft gameplay, world loading, movement, chat, or resource-pack
+behavior unless those become necessary to prove VanillaCord behavior.
 
-- `v2.4` is the current release and has a GitHub Actions-published
-  `VanillaCord.jar` asset.
-- Local validation patched Minecraft `26.1.2` successfully after the fix and
-  confirmed the nested bundled server jar retained `PermissionSet.class` and
-  VanillaCord helper classes.
-- Production validation then ran Minecraft `26.2` through the CapRover vanilla
-  image successfully.
-- Next release hardening should gate releases on the compatibility probe instead
-  of relying on manual local and production validation.
+## SourceScanner Hardening
 
-Local usage from Windows:
+Monitoring is evidence; stronger discovery prevents failures. Engineering effort
+should therefore favor SourceScanner robustness over elaborate CI reporting.
 
-```powershell
-$env:GITHUB_TOKEN = gh auth token
-.\scripts\Invoke-CompatibilityProbe.ps1 -UseDocker
-```
+Future scanner work should combine multiple signals where practical (constants,
+method shape, field shape, invocation context) and emit explicit discovery
+results for `startup`, `handshake`, `login`, `send`, `receive`, and `connection`.
+A target selected by a single broad diagnostic substring should be treated as a
+compatibility risk.
 
-Use `-SkipSnapshot` when you only want stable release coverage:
+## CI Policy
 
-```powershell
-$env:GITHUB_TOKEN = gh auth token
-.\scripts\Invoke-CompatibilityProbe.ps1 -UseDocker -SkipSnapshot
-```
+- Push/PR changes: normal unit/build validation.
+- Daily schedule: latest stable + latest snapshot/RC only.
+- Manual/release regression: current targets plus representative maintained
+  versions as appropriate.
+- Full legacy sweep: manual diagnostic operation, not routine release work.
+- Stable compatibility failures are blocking once boot/forwarding checks are in
+  place.
+- Snapshot failures are early-warning evidence, not automatic proof of a
+  VanillaCord defect.
 
-Use an empty local matrix for a lowest-cost smoke test of only the latest stable
-release:
+## Current Implementation
 
-```powershell
-$env:GITHUB_TOKEN = gh auth token
-.\scripts\Invoke-CompatibilityProbe.ps1 -UseDocker -SkipSnapshot -RequiredSupported "" -BestEffortLegacy ""
-```
+Implemented:
+
+- `scripts/check-minecraft-compatibility.sh` resolves Mojang current versions and
+  runs repeatable patch probes.
+- `scripts/Invoke-CompatibilityProbe.ps1` provides a local Windows entry point.
+- `.github/workflows/compatibility.yml` supports both manual matrix runs and a
+  daily stateless compatibility sentinel.
+- Scheduled runs are restricted to current stable + current snapshot/RC, use a
+  30-minute job timeout, cancel redundant in-progress runs, publish the report in
+  the job summary, and retain the report artifact for 30 days.
+- ASM `9.10.1` supports reading current Java 25-era class files.
+
+Next implementation increments, in priority order:
+
+1. add deterministic patched-jar integrity assertions;
+2. add an ephemeral current-stable boot smoke test;
+3. add the smallest maintainable Velocity forwarding-boundary smoke test;
+4. improve SourceScanner confidence/diagnostics using multiple signals;
+5. only then consider release gating or automated issue lifecycle based on
+   observed failure frequency.
+
+## Stop Conditions
+
+Reduce the sentinel back to patch + integrity + boot if the forwarding fixture
+requires materially more maintenance than VanillaCord itself, produces mostly
+harness failures, or tracks Minecraft protocol changes unrelated to forwarding.
+Do not add compatibility-management infrastructure unless repeated real failures
+show that the simpler workflow is insufficient.
+
+The success criterion is not maximum automation. It is early, deterministic,
+actionable evidence of a Minecraft compatibility break with minimal maintenance
+burden.

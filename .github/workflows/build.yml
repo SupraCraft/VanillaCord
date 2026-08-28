@@ -51,7 +51,7 @@ jobs:
 
       - name: Verify no placeholder versions
         run: |
-          if rg --fixed-strings -- '-PLACEHOLDER' pom.xml; then
+          if grep -F -- '-PLACEHOLDER' pom.xml; then
             echo "Found placeholder versions. Please replace -PLACEHOLDER before building."
             exit 1
           fi
@@ -130,7 +130,7 @@ jobs:
 
       - name: Verify no placeholder versions
         run: |
-          if rg --fixed-strings -- '-PLACEHOLDER' pom.xml; then
+          if grep -F -- '-PLACEHOLDER' pom.xml; then
             echo "Found placeholder versions. Please replace -PLACEHOLDER before building."
             exit 1
           fi

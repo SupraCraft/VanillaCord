@@ -47,8 +47,12 @@ public class SourceScanner extends HierarchyScanner {
                         System.out.print("Found the dedicated server: ");
                         System.out.println(SourceScanner.super.name);
                         file.sources.startup = data;
-                    } else if (isLoginHello(text)) {
+                    } else if (isStrongLoginHello(text)) {
                         System.out.print("Found the login listener: ");
+                        System.out.println(SourceScanner.super.name);
+                        file.sources.login = data;
+                    } else if (file.sources.login == null && isWeakLoginHello(text)) {
+                        System.out.print("Found the login listener (fallback): ");
                         System.out.println(SourceScanner.super.name);
                         file.sources.login = data;
                     } else if (hasTID && isPayloadTooLarge(text)) {
@@ -70,15 +74,19 @@ public class SourceScanner extends HierarchyScanner {
         };
     }
 
-    private static boolean isLoginHello(String text) {
+    private static boolean isStrongLoginHello(String text) {
         String lower = text.toLowerCase(Locale.ROOT);
         if (lower.contains("acknowledg")) {
             return false;
         }
         return lower.contains("unexpected hello")
-                || lower.contains("unexpected login")
                 || lower.contains("hello packet")
                 || lower.contains("received hello twice");
+    }
+
+    private static boolean isWeakLoginHello(String text) {
+        String lower = text.toLowerCase(Locale.ROOT);
+        return !lower.contains("acknowledg") && lower.contains("unexpected login");
     }
 
     private static boolean isPayloadTooLarge(String text) {

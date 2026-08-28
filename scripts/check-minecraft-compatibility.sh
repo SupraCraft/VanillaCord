@@ -24,11 +24,9 @@ REPORT_PATH="${VANILLACORD_COMPAT_REPORT:-docs/minecraft-compatibility-report.md
 if [[ "$REQUIRED_SUPPORTED" == "none" || "$REQUIRED_SUPPORTED" == "-" ]]; then
   REQUIRED_SUPPORTED=""
 fi
-
 if [[ "$BEST_EFFORT_LEGACY" == "none" || "$BEST_EFFORT_LEGACY" == "-" ]]; then
   BEST_EFFORT_LEGACY=""
 fi
-
 if [[ ! -f "$JAR_PATH" ]]; then
   echo "VanillaCord jar not found: $JAR_PATH" >&2
   exit 1
@@ -37,7 +35,6 @@ fi
 manifest_json="$(python3 - "$MANIFEST_URL" <<'PY'
 import sys
 from urllib.request import urlopen
-
 with urlopen(sys.argv[1], timeout=30) as response:
     sys.stdout.write(response.read().decode("utf-8"))
 PY
@@ -53,7 +50,6 @@ with open(sys.argv[1], encoding="utf-8") as handle:
 print(manifest["latest"]["release"])
 PY
 )"
-
 latest_snapshot="$(python3 - "$manifest_file" <<'PY'
 import json, sys
 with open(sys.argv[1], encoding="utf-8") as handle:
@@ -74,8 +70,7 @@ PY
 }
 
 append_unique() {
-  local list="$1"
-  local value="$2"
+  local list="$1" value="$2"
   if [[ " $list " == *" $value "* ]]; then
     printf '%s\n' "$list"
   else
@@ -83,19 +78,19 @@ append_unique() {
   fi
 }
 
-required_current="$latest_release"
-if [[ "$INCLUDE_SNAPSHOT" == "true" && -n "$latest_snapshot" && "$latest_snapshot" != "$latest_release" ]]; then
-  required_current="$(append_unique "$required_current" "$latest_snapshot")"
-fi
-
-required_versions="$required_current"
+blocking_versions="$latest_release"
 for version in $REQUIRED_SUPPORTED; do
-  required_versions="$(append_unique "$required_versions" "$version")"
+  blocking_versions="$(append_unique "$blocking_versions" "$version")"
 done
 
-best_effort_versions=""
+current_development=""
+if [[ "$INCLUDE_SNAPSHOT" == "true" && -n "$latest_snapshot" && "$latest_snapshot" != "$latest_release" ]]; then
+  current_development="$latest_snapshot"
+fi
+
+legacy_versions=""
 for version in $BEST_EFFORT_LEGACY; do
-  best_effort_versions="$(append_unique "$best_effort_versions" "$version")"
+  legacy_versions="$(append_unique "$legacy_versions" "$version")"
 done
 
 {
@@ -109,32 +104,28 @@ done
   echo "- Jar: \`$JAR_PATH\`"
   echo "- Required supported matrix: \`$REQUIRED_SUPPORTED\`"
   echo "- Best-effort legacy matrix: \`$BEST_EFFORT_LEGACY\`"
-  echo "- Include snapshot/RC: \`$INCLUDE_SNAPSHOT\`"
+  echo "- Include current development: \`$INCLUDE_SNAPSHOT\`"
   echo "- Boot latest stable: \`$BOOT_SMOKE\`"
+  echo "- Policy: current-stable/required-supported failures are blocking; current-development/best-effort failures are advisory."
   echo
-  echo "| Tier | Version | Result |"
-  echo "| --- | --- | --- |"
+  echo "| Tier | Version | Policy | Result |"
+  echo "| --- | --- | --- | --- |"
 } > "$REPORT_PATH"
 
-required_failed=0
-best_effort_failed=0
+blocking_failed=0
+advisory_failed=0
 
 record_failure() {
-  local required="$1"
-  if [[ "$required" == "true" ]]; then
-    required_failed=1
+  local blocking="$1"
+  if [[ "$blocking" == "true" ]]; then
+    blocking_failed=1
   else
-    best_effort_failed=1
+    advisory_failed=1
   fi
 }
 
 boot_smoke() {
-  local version="$1"
-  local output_jar="$2"
-  local workdir
-  local pid
-  local elapsed=0
-
+  local version="$1" output_jar="$2" workdir pid elapsed=0
   workdir="$(mktemp -d)"
   cp "$output_jar" "$workdir/server.jar"
   printf 'eula=true\n' > "$workdir/eula.txt"
@@ -162,20 +153,15 @@ EOF
     if grep -Eq 'Done \([^)]*\)!|Done \(' "$workdir/server.log" 2>/dev/null; then
       printf 'stop\n' >&9 || true
       for _ in $(seq 1 30); do
-        if ! kill -0 "$pid" 2>/dev/null; then
-          break
-        fi
+        if ! kill -0 "$pid" 2>/dev/null; then break; fi
         sleep 1
       done
-      if kill -0 "$pid" 2>/dev/null; then
-        kill "$pid" 2>/dev/null || true
-      fi
+      if kill -0 "$pid" 2>/dev/null; then kill "$pid" 2>/dev/null || true; fi
       wait "$pid" 2>/dev/null || true
       exec 9>&-
       rm -rf "$workdir"
       return 0
     fi
-
     if ! kill -0 "$pid" 2>/dev/null; then
       echo "Minecraft $version exited before reaching the startup marker." >&2
       tail -n 80 "$workdir/server.log" >&2 || true
@@ -184,7 +170,6 @@ EOF
       rm -rf "$workdir"
       return 1
     fi
-
     sleep 2
     elapsed=$((elapsed + 2))
   done
@@ -201,68 +186,72 @@ EOF
 }
 
 run_probe() {
-  local tier="$1"
-  local version="$2"
-  local required="$3"
+  local tier="$1" version="$2" blocking="$3"
+  local policy="advisory"
   local output_jar="out/${version}.jar"
+  [[ "$blocking" == "true" ]] && policy="blocking"
 
   if ! version_exists "$version"; then
-    echo "| $tier | \`$version\` | missing from Mojang manifest |" >> "$REPORT_PATH"
-    record_failure "$required"
+    echo "| $tier | \`$version\` | $policy | missing from Mojang manifest |" >> "$REPORT_PATH"
+    record_failure "$blocking"
     return
   fi
 
   rm -f "$output_jar"
-
-  echo "Patching Minecraft $version ($tier)"
+  echo "Patching Minecraft $version ($tier, $policy)"
   if ! java -jar "$JAR_PATH" "$version"; then
-    echo "| $tier | \`$version\` | patch failed |" >> "$REPORT_PATH"
-    record_failure "$required"
+    echo "| $tier | \`$version\` | $policy | patch failed |" >> "$REPORT_PATH"
+    record_failure "$blocking"
     return
   fi
-
   if [[ ! -s "$output_jar" ]]; then
-    echo "| $tier | \`$version\` | patch exited successfully but output jar is missing/empty |" >> "$REPORT_PATH"
-    record_failure "$required"
+    echo "| $tier | \`$version\` | $policy | patch exited successfully but output jar is missing/empty |" >> "$REPORT_PATH"
+    record_failure "$blocking"
     return
   fi
-
   if ! jar tf "$output_jar" >/dev/null 2>&1; then
-    echo "| $tier | \`$version\` | patched output is not a readable jar |" >> "$REPORT_PATH"
-    record_failure "$required"
+    echo "| $tier | \`$version\` | $policy | patched output is not a readable jar |" >> "$REPORT_PATH"
+    record_failure "$blocking"
     return
   fi
 
   if [[ "$BOOT_SMOKE" == "true" && "$version" == "$latest_release" ]]; then
     echo "Booting patched Minecraft $version"
     if ! boot_smoke "$version" "$output_jar"; then
-      echo "| $tier | \`$version\` | boot smoke failed |" >> "$REPORT_PATH"
-      record_failure "$required"
+      echo "| $tier | \`$version\` | $policy | boot smoke failed |" >> "$REPORT_PATH"
+      record_failure "$blocking"
       return
     fi
-    echo "| $tier | \`$version\` | pass (patch + jar integrity + boot) |" >> "$REPORT_PATH"
+    echo "| $tier | \`$version\` | $policy | pass (patch + jar integrity + boot) |" >> "$REPORT_PATH"
     return
   fi
 
-  echo "| $tier | \`$version\` | pass (patch + jar integrity) |" >> "$REPORT_PATH"
+  echo "| $tier | \`$version\` | $policy | pass (patch + jar integrity) |" >> "$REPORT_PATH"
 }
 
-for version in $required_versions; do
-  run_probe "required" "$version" "true"
+run_probe "current-stable" "$latest_release" "true"
+
+for version in $REQUIRED_SUPPORTED; do
+  if [[ "$version" != "$latest_release" ]]; then
+    run_probe "required-supported" "$version" "true"
+  fi
 done
 
-for version in $best_effort_versions; do
+if [[ -n "$current_development" ]]; then
+  run_probe "current-development" "$current_development" "false"
+fi
+
+for version in $legacy_versions; do
   run_probe "best-effort" "$version" "false"
 done
 
 echo
 cat "$REPORT_PATH"
 
-if [[ "$best_effort_failed" -ne 0 ]]; then
-  echo "One or more best-effort legacy versions failed. See $REPORT_PATH." >&2
+if [[ "$advisory_failed" -ne 0 ]]; then
+  echo "One or more advisory compatibility targets failed. Stable/release gating remains unaffected; see $REPORT_PATH." >&2
 fi
-
-if [[ "$required_failed" -ne 0 ]]; then
-  echo "One or more required Minecraft versions failed. See $REPORT_PATH." >&2
+if [[ "$blocking_failed" -ne 0 ]]; then
+  echo "One or more blocking Minecraft compatibility targets failed. See $REPORT_PATH." >&2
   exit 1
 fi

@@ -12,6 +12,7 @@ on:
       - 'scripts/**'
       - '.github/workflows/build.yml'
       - 'VERSIONING.md'
+      - 'MODERNIZATION_PLAN.md'
   pull_request:
     branches: [master, main]
     paths:
@@ -24,6 +25,7 @@ on:
       - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
       - 'VERSIONING.md'
+      - 'MODERNIZATION_PLAN.md'
   release:
     types: [published]
   workflow_dispatch:
@@ -94,7 +96,7 @@ jobs:
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
-        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
+        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
       - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
@@ -126,13 +128,14 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
-      - name: Verify generated artifact manifest
-        run: |
-          unzip -p artifacts/VanillaCord.jar META-INF/MANIFEST.MF > /tmp/vanillacord-manifest.mf
-          grep -F 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf
-          grep -F 'Implementation-Version: ${{ steps.version.outputs.VALUE }}' /tmp/vanillacord-manifest.mf
-          grep -F "Build-Commit: ${SOURCE_SHA}" /tmp/vanillacord-manifest.mf
-          grep -F "Bridge-Version: ${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
+      - name: Verify artifact contract
+        run: >-
+          bash ./scripts/verify-artifact-contract.sh
+          artifacts/VanillaCord.jar
+          '${{ steps.version.outputs.VALUE }}'
+          "${BRIDGE_VERSION}"
+          "${SOURCE_SHA}"
+          ARTIFACT-INVENTORY.txt
 
       - name: Generate checksums
         run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
@@ -145,6 +148,7 @@ jobs:
             artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
+            ARTIFACT-INVENTORY.txt
             SHA256SUMS
           if-no-files-found: error
 
@@ -199,7 +203,7 @@ jobs:
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
-        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
+        run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
       - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
@@ -231,12 +235,14 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
-      - name: Verify generated artifact manifest
-        run: |
-          unzip -p artifacts/VanillaCord.jar META-INF/MANIFEST.MF > /tmp/vanillacord-manifest.mf
-          grep -F 'Main-Class: vanillacord.Downloader' /tmp/vanillacord-manifest.mf
-          grep -F 'Implementation-Version: ${{ steps.version.outputs.VALUE }}' /tmp/vanillacord-manifest.mf
-          grep -F "Bridge-Version: ${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
+      - name: Verify artifact contract
+        run: >-
+          bash ./scripts/verify-artifact-contract.sh
+          artifacts/VanillaCord.jar
+          '${{ steps.version.outputs.VALUE }}'
+          "${BRIDGE_VERSION}"
+          ""
+          ARTIFACT-INVENTORY.txt
 
       - name: Generate checksums
         run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
@@ -249,5 +255,6 @@ jobs:
             artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
+            ARTIFACT-INVENTORY.txt
             SHA256SUMS
           fail_on_unmatched_files: true

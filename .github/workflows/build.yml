@@ -79,7 +79,13 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VER="${GITHUB_REF_NAME#v}"
           else
-            SOURCE_VERSION="$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)"
+            SOURCE_VERSION="$(python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('pom.xml').getroot()
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          print(root.find('m:version', ns).text.strip())
+          PY
+          )"
             BASE_VERSION="${SOURCE_VERSION%%-SNAPSHOT*}"
             VER="${BASE_VERSION}-SNAPSHOT.${GITHUB_RUN_NUMBER}"
           fi

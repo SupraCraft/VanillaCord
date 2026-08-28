@@ -1,72 +1,72 @@
-# Bridge Dependency
+# Bridge dependency
 
-VanillaCord still depends on Bridge. It is not a historical leftover.
+VanillaCord still depends on Bridge; it is an active build/runtime transformation dependency, not a historical leftover.
 
-## How VanillaCord Uses Bridge
+## Canonical dependency identity
+
+The maintained producer is `SupraCraft/Bridge`, a public fork of `ME1312/Bridge`.
+New Bridge packages from the maintained fork use the canonical Maven group
+`io.github.supracraft.bridge`. Historical `net.ME1312.ASM` packages identify the
+upstream lineage and must not be used by new VanillaCord builds.
 
 VanillaCord uses Bridge in three places:
 
-| Use | Current dependency | Why it matters |
+| Use | Canonical dependency | Why it matters |
 | --- | --- | --- |
-| Build-time bytecode transformation | `net.ME1312.ASM:bridge-plugin` | Runs the Maven `bridge:bridge` goal during the VanillaCord build. |
-| ASM helper APIs | `net.ME1312.ASM:bridge-asm` | Provides `HierarchyScanner`, `HierarchicalWriter`, `TypeMap`, `KnownType`, `LinkedVisitor`, and bytecode helper methods used by the patcher. |
-| Bridge runtime API surface | `net.ME1312.ASM:bridge` | Provides `bridge.Invocation` and `bridge.Unchecked`, which are referenced by VanillaCord helper classes and processed by the Bridge plugin. |
+| Build-time bytecode transformation | `io.github.supracraft.bridge:bridge-plugin` | Runs the Maven `bridge:bridge` goal during the VanillaCord build. |
+| ASM helper APIs | `io.github.supracraft.bridge:bridge-asm` | Provides hierarchy scanning, writer, type-map, known-type, visitor, and bytecode helpers used by the patcher. |
+| Bridge runtime API surface | `io.github.supracraft.bridge:bridge` | Provides `bridge.Invocation` and `bridge.Unchecked`, referenced by VanillaCord helpers and processed by the Bridge plugin. |
 
-Removing Bridge would be a deliberate refactor, not a dependency cleanup. A
-replacement would need to recreate the hierarchy scanner, class writer behavior,
-type-map helpers, and Bridge invocation transformations with plain ASM or a new
-local abstraction.
+The Java `bridge.*` package names remain intentionally unchanged. They are neutral API names and retaining them avoids unnecessary binary/source churn while preserving the ability to flow suitable changes upstream.
 
-## Fork Status
+## Package and version policy
 
-The maintained fork is:
+Canonical Bridge development builds are immutable:
 
 ```text
-https://github.com/mark-e-deyoung/Bridge
+io.github.supracraft.bridge:bridge:0.1.0-dev.34
+io.github.supracraft.bridge:bridge-asm:0.1.0-dev.34
+io.github.supracraft.bridge:bridge-plugin:0.1.0-dev.34
 ```
 
-It is a public fork of:
+`0.1.0-dev.34` was the first canonical Bridge build published from the migrated master branch. Later normal integration CI may resolve a newer `X.Y.Z-dev.N` build, but each VanillaCord artifact records the exact coordinate it actually consumed.
+
+The VanillaCord source POM pins a known exact Bridge baseline. Release builds use that source-pinned version unless an explicit exact `BRIDGE_VERSION` override is supplied. Development CI may use `scripts/resolve-bridge-version.sh`, which intentionally filters out legacy snapshots, release candidates, and stable versions and chooses only canonical immutable `X.Y.Z-dev.N` builds.
+
+## Repository relationship
+
+Maintained fork:
+
+```text
+https://github.com/SupraCraft/Bridge
+```
+
+Upstream:
 
 ```text
 https://github.com/ME1312/Bridge
 ```
 
-The local workspace keeps Bridge as a sibling checkout:
+VanillaCord resolves Bridge through Maven packages, not a source checkout. The default package owner is `SupraCraft`; `BRIDGE_OWNER` can override the repository owner when deliberately testing another compatible publication source.
+
+The produced VanillaCord manifest/build metadata preserves both identities separately:
 
 ```text
-MineCraft/
-  Bridge/
-  VanillaCord/
+Bridge-Coordinate: io.github.supracraft.bridge:bridge:<exact-version>
+Source-Repository: SupraCraft/VanillaCord
+Upstream-Repository: ME1312/VanillaCord
 ```
 
-VanillaCord resolves Bridge through Maven packages, not through source checkout.
-The default owner in `pom.xml` is `mark-e-deyoung`, and CI can override it with
-`BRIDGE_OWNER`.
+Bridge JARs likewise record `SupraCraft/Bridge` as source and `ME1312/Bridge` as upstream.
 
-## Submodule Decision
+## Submodule decision
 
-Do not add Bridge as a Git submodule of VanillaCord right now.
+Do not add Bridge as a Git submodule merely to tighten coupling.
 
-Reasons:
+- VanillaCord consumes versioned Maven artifacts.
+- CI and local builds already exercise the same package path used by downstream consumers.
+- A submodule would add a second dependency mechanism rather than replacing one.
+- Exact immutable coordinates plus provenance provide a cleaner reproducibility boundary.
+- Sibling source checkouts can still be used for coordinated development without becoming a release dependency.
 
-- VanillaCord consumes versioned Maven artifacts: `bridge`, `bridge-asm`, and
-  `bridge-plugin`.
-- GitHub Actions and local builds already need Maven package resolution, so a
-  submodule would add a second dependency path rather than replacing the first.
-- Submodules make clones, branch changes, and CI checkouts more fragile.
-- Release reproducibility is better handled by pinning `BRIDGE_VERSION` to a
-  published package version.
-
-Use a sibling checkout for development and publish Bridge packages from the
-Bridge fork when changes are needed. Then update VanillaCord by pinning
-`BRIDGE_VERSION` or allowing CI to resolve the newest published Bridge package.
-
-## Recommended Operating Model
-
-1. Keep `mark-e-deyoung/Bridge` as the maintained fork.
-2. Publish Bridge artifacts to GitHub Packages from that fork.
-3. Use `BRIDGE_VERSION` to pin VanillaCord release builds.
-4. Keep the local `Bridge/` checkout beside `VanillaCord/` for source work.
-5. Avoid submodules unless VanillaCord is changed to build Bridge from source as
-   a true multi-repository aggregate build.
-
+Removing Bridge itself would be a separate architecture refactor. It would need to replace the hierarchy scanner, class-writer behavior, type-map helpers, and invocation transformations; it is not part of artifact-identity modernization.

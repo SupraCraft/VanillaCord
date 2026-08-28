@@ -6,7 +6,7 @@ VanillaCord in this repository is a SupraCraft-maintained fork. Published artifa
 
 Published Maven coordinates are owned by this repository, not by the upstream project.
 
-Target coordinates:
+Canonical coordinates:
 
 - group: `io.github.supracraft.vanillacord`
 - artifact: `vanillacord`
@@ -15,11 +15,11 @@ The legacy `net.ME1312:VanillaCord` coordinate is upstream-derived and is not th
 
 The existing `vanillacord.*` Java implementation packages are already neutral. Do not rename Java packages merely to brand the fork; that would create large source diffs and make upstream flow-back harder without improving artifact identity.
 
-Bridge dependencies should consume SupraCraft-owned Bridge coordinates once those artifacts are published under `io.github.supracraft.bridge`.
+Bridge dependencies consume SupraCraft-owned `io.github.supracraft.bridge` coordinates.
 
 ## Artifact metadata
 
-Every distributable artifact should record at least:
+Every distributable artifact records at least:
 
 - `Implementation-Vendor: SupraCraft`
 - source repository: `SupraCraft/VanillaCord`
@@ -28,13 +28,13 @@ Every distributable artifact should record at least:
 - exact Bridge coordinate/version consumed
 - upstream repository/base reference when known
 
-CycloneDX metadata and release evidence should carry the same source identity.
+CycloneDX metadata and release evidence carry the same source identity.
 
-The canonical standalone release filename should be human-identifiable:
+The canonical standalone release filename is:
 
 - `supracraft-vanillacord-<version>.jar`
 
-A temporary `VanillaCord.jar` compatibility alias may be retained while downstream deployment scripts migrate, but it is not the canonical artifact identity.
+The historical `VanillaCord.jar` compatibility alias was retired before the normalized SupraCraft `2.9.0` release line. New CI artifacts and releases emit only the explicit, versioned SupraCraft filename. Historical releases may retain older upstream-derived filenames and remain historical evidence; they are not the naming contract for new artifacts.
 
 ## Version policy
 

@@ -38,11 +38,12 @@ Canonical standalone filename:
 supracraft-vanillacord-<version>.jar
 ```
 
-`VanillaCord.jar` is emitted temporarily as a byte-identical compatibility alias
-for existing deployment automation. New consumers should use the canonical
-versioned filename or Maven coordinate. The Java packages remain `vanillacord.*`
-because they are already neutral and keeping them stable reduces compatibility
-churn and keeps source changes practical to contribute upstream.
+The historical `VanillaCord.jar` compatibility alias is not emitted by new
+SupraCraft builds or releases. Historical releases may retain upstream-derived
+filenames, but new consumers and automation should use the canonical versioned
+filename or Maven coordinate. The Java packages remain `vanillacord.*` because
+they are already neutral and keeping them stable reduces compatibility churn and
+keeps source changes practical to contribute upstream.
 
 See `ARTIFACT_IDENTITY.md` and `VERSIONING.md` for the machine-consumption and
 version policy.
@@ -59,12 +60,6 @@ Download the canonical release JAR, then run it with one or more Minecraft versi
 
 ```sh
 java -jar supracraft-vanillacord-2.9.0.jar 26.2
-```
-
-The temporary compatibility alias remains equivalent while downstream automation migrates:
-
-```sh
-java -jar VanillaCord.jar 26.2
 ```
 
 The patched server jar is written to:
@@ -157,10 +152,9 @@ login will fail with an invalid forwarding data or forwarding secret error.
 
 ## CapRover workspace behavior
 In this workspace, the vanilla server image downloads a VanillaCord release and
-patches the selected vanilla server version at runtime. Existing images that
-expect `VanillaCord.jar` remain supported by the temporary compatibility alias;
-new deployment code should locate the canonical `supracraft-vanillacord-*.jar`
-release asset.
+patches the selected vanilla server version at runtime. Deployment code should
+locate the canonical `supracraft-vanillacord-*.jar` release asset rather than
+assuming an unversioned filename.
 
 ```text
 MINECRAFT_SERVER_VERSION=26.2

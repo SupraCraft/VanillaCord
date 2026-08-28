@@ -1,20 +1,17 @@
 package vanillacord.server;
 
-import com.mojang.authlib.properties.Property;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VelocityHelperTest {
     private static final String SECRET = "correct-horse-battery-staple";
@@ -31,11 +28,11 @@ class VelocityHelperTest {
             assertEquals(PLAYER_ID, parsed.playerId());
             assertEquals("TestPlayer", parsed.playerName());
             assertEquals(1, parsed.properties().size());
-            assertTrue(parsed.properties().containsKey("textures"));
 
-            Property property = parsed.properties().get("textures").iterator().next();
-            assertEquals("texture-value", propertyComponent(property, "value"));
-            assertEquals("texture-signature", propertyComponent(property, "signature"));
+            VelocityForwardingParser.ForwardedProperty property = parsed.properties().getFirst();
+            assertEquals("textures", property.name());
+            assertEquals("texture-value", property.value());
+            assertEquals("texture-signature", property.signature());
             assertEquals(0, packet.readableBytes());
         } finally {
             packet.release();
@@ -117,18 +114,5 @@ class VelocityHelperTest {
             }
             out.writeByte(next);
         } while (remaining != 0);
-    }
-
-    private static String propertyComponent(Property property, String component) throws Exception {
-        for (String candidate : new String[] {component, "get" + Character.toUpperCase(component.charAt(0)) + component.substring(1)}) {
-            try {
-                Method method = Property.class.getMethod(candidate);
-                Object value = method.invoke(property);
-                return (value == null)? null : value.toString();
-            } catch (NoSuchMethodException ignored) {
-                // Support both record-style and legacy bean-style authlib APIs.
-            }
-        }
-        throw new NoSuchMethodException("No authlib Property accessor for " + component);
     }
 }

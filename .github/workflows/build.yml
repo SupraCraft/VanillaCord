@@ -15,6 +15,7 @@ on:
       - 'scripts/**'
       - '.github/workflows/build.yml'
       - 'VERSIONING.md'
+      - 'ARTIFACT_IDENTITY.md'
       - 'MODERNIZATION_PLAN.md'
       - 'docs/build-modernization-status.md'
   pull_request:
@@ -32,6 +33,7 @@ on:
       - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
       - 'VERSIONING.md'
+      - 'ARTIFACT_IDENTITY.md'
       - 'MODERNIZATION_PLAN.md'
       - 'docs/build-modernization-status.md'
   release:
@@ -42,12 +44,16 @@ on:
         description: "Tag to build and upload"
         required: true
       bridge_version:
-        description: "Exact Bridge version; leave empty to resolve current compatible snapshot"
+        description: "Exact canonical Bridge version; development builds may leave empty to resolve newest dev build"
         required: false
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
 
 env:
   BRIDGE_OWNER: ${{ github.repository_owner }}
@@ -57,10 +63,6 @@ env:
   SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   SOURCE_REF: ${{ github.head_ref || github.ref }}
 
-permissions:
-  contents: read
-  packages: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -68,12 +70,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
 
-      - name: Verify no placeholder versions
+      - name: Verify artifact identity
         run: |
-          if grep -F -- '-PLACEHOLDER' pom.xml; then
-            echo "Found placeholder versions. Please replace -PLACEHOLDER before building."
+          if grep -F 'net.ME1312' pom.xml; then
+            echo "Legacy upstream Maven coordinates remain in the active POM."
             exit 1
           fi
+          grep -F '<groupId>io.github.supracraft.vanillacord</groupId>' pom.xml
+          grep -F '<artifactId>vanillacord</artifactId>' pom.xml
+          grep -F '<version>2.9.0-dev</version>' pom.xml
+          grep -F '<groupId>io.github.supracraft.bridge</groupId>' pom.xml
 
       - name: Set up JDK
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
@@ -103,21 +109,21 @@ jobs:
           print(root.find('m:version', ns).text.strip())
           PY
           )"
-            BASE_VERSION="${SOURCE_VERSION%%-SNAPSHOT*}"
-            VER="${BASE_VERSION}-SNAPSHOT.${GITHUB_RUN_NUMBER}"
+            case "${SOURCE_VERSION}" in
+              *-dev) VER="${SOURCE_VERSION}.${GITHUB_RUN_NUMBER}" ;;
+              *) echo "Non-release source version must end in -dev; got ${SOURCE_VERSION}" >&2; exit 1 ;;
+            esac
           fi
           echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
         run: ./mvnw -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
-      - name: Resolve exact Bridge version
+      - name: Resolve newest canonical Bridge dev build
         if: env.BRIDGE_VERSION == ''
         env:
-          BRIDGE_OWNER: ${{ env.BRIDGE_OWNER }}
           GITHUB_TOKEN: ${{ env.BRIDGE_PACKAGES_TOKEN }}
         run: |
-          echo "Resolving Bridge version for owner ${BRIDGE_OWNER}"
           VERSION="$(./scripts/resolve-bridge-version.sh)"
           echo "Using Bridge ${VERSION}"
           echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
@@ -125,8 +131,12 @@ jobs:
       - name: Record build inputs
         run: |
           cat > BUILD-METADATA.properties <<EOF
-          vanillacord.version=${{ steps.version.outputs.VALUE }}
-          bridge.version=${BRIDGE_VERSION}
+          group=io.github.supracraft.vanillacord
+          artifact=vanillacord
+          version=${{ steps.version.outputs.VALUE }}
+          bridge.coordinate=io.github.supracraft.bridge:bridge:${BRIDGE_VERSION}
+          source.repository=SupraCraft/VanillaCord
+          upstream.repository=ME1312/VanillaCord
           git.commit=${SOURCE_SHA}
           git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
@@ -143,23 +153,30 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
+      - name: Create temporary compatibility alias
+        run: cp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+
       - name: Verify artifact contract
         run: >-
           bash ./scripts/verify-artifact-contract.sh
-          artifacts/VanillaCord.jar
+          "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar"
           '${{ steps.version.outputs.VALUE }}'
           "${BRIDGE_VERSION}"
           "${SOURCE_SHA}"
           ARTIFACT-INVENTORY.txt
 
+      - name: Verify compatibility alias
+        run: cmp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+
       - name: Generate checksums
-        run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
 
       - name: Upload build evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: VanillaCord-${{ steps.version.outputs.VALUE }}
+          name: supracraft-vanillacord-${{ steps.version.outputs.VALUE }}
           path: |
+            artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
             artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
@@ -193,13 +210,6 @@ jobs:
         with:
           ref: ${{ steps.vars.outputs.TAG }}
 
-      - name: Verify no placeholder versions
-        run: |
-          if grep -F -- '-PLACEHOLDER' pom.xml; then
-            echo "Found placeholder versions. Please replace -PLACEHOLDER before building."
-            exit 1
-          fi
-
       - name: Set up JDK
         uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
         with:
@@ -219,28 +229,33 @@ jobs:
         id: version
         run: |
           VER="${{ steps.vars.outputs.TAG }}"
-          VER="${VER#v}"
-          echo "VALUE=$VER" >> "$GITHUB_OUTPUT"
+          echo "VALUE=${VER#v}" >> "$GITHUB_OUTPUT"
 
       - name: Set project version
         run: ./mvnw -B -q org.codehaus.mojo:versions-maven-plugin:2.21.0:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
-      - name: Resolve exact Bridge version
+      - name: Use source-pinned Bridge version
         if: env.BRIDGE_VERSION == ''
-        env:
-          BRIDGE_OWNER: ${{ env.BRIDGE_OWNER }}
-          GITHUB_TOKEN: ${{ env.BRIDGE_PACKAGES_TOKEN }}
         run: |
-          echo "Resolving Bridge version for owner ${BRIDGE_OWNER}"
-          VERSION="$(./scripts/resolve-bridge-version.sh)"
-          echo "Using Bridge ${VERSION}"
+          VERSION="$(python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('pom.xml').getroot()
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          print(root.find("m:properties/m:bridge.version", ns).text.strip())
+          PY
+          )"
+          echo "Using source-pinned Bridge ${VERSION}"
           echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Record release inputs
         run: |
           cat > BUILD-METADATA.properties <<EOF
-          vanillacord.version=${{ steps.version.outputs.VALUE }}
-          bridge.version=${BRIDGE_VERSION}
+          group=io.github.supracraft.vanillacord
+          artifact=vanillacord
+          version=${{ steps.version.outputs.VALUE }}
+          bridge.coordinate=io.github.supracraft.bridge:bridge:${BRIDGE_VERSION}
+          source.repository=SupraCraft/VanillaCord
+          upstream.repository=ME1312/VanillaCord
           git.commit=${SOURCE_SHA}
           git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
@@ -257,23 +272,30 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
+      - name: Create temporary compatibility alias
+        run: cp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+
       - name: Verify artifact contract
         run: >-
           bash ./scripts/verify-artifact-contract.sh
-          artifacts/VanillaCord.jar
+          "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar"
           '${{ steps.version.outputs.VALUE }}'
           "${BRIDGE_VERSION}"
           ""
           ARTIFACT-INVENTORY.txt
 
+      - name: Verify compatibility alias
+        run: cmp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+
       - name: Generate checksums
-        run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
 
       - name: Publish release assets
         uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d
         with:
           tag_name: ${{ steps.vars.outputs.TAG }}
           files: |
+            artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
             artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties

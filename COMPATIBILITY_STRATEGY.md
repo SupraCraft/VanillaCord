@@ -118,11 +118,25 @@ This spends a small amount of public-runner compute to avoid persistent state,
 write permissions, synchronization logic, and repository churn. Concurrency is
 bounded so a newer run cancels a redundant in-progress run.
 
+The latest stable target additionally receives an ephemeral boot smoke test. The
+server runs only on loopback, uses a disposable working directory and world, has
+bounded heap, and must reach Minecraft's normal startup-complete marker before it
+is stopped. Snapshots are not booted because their purpose is early warning and
+because expanding behavioral coverage there would increase harness churn.
+
+### Pull request validation
+
+Changes to the compatibility workflow or compatibility probe trigger a narrowly
+scoped PR compatibility run. That review run tests only the latest stable target
+with patch, jar integrity, and boot smoke enabled. Snapshot and historical
+coverage are disabled for this path so changes to the harness are proven before
+merge without duplicating the full regression matrix.
+
 ### Manual regression matrix
 
 `workflow_dispatch` retains the maintained and best-effort matrices. Maintainers
-can override the version sets and snapshot inclusion without changing repository
-state.
+can override the version sets, snapshot inclusion, and stable boot smoke without
+changing repository state.
 
 ### Reports
 
@@ -161,7 +175,9 @@ compatibility risk.
 ## CI Policy
 
 - Push/PR changes: normal unit/build validation.
-- Daily schedule: latest stable + latest snapshot/RC only.
+- Compatibility-harness PR changes: latest stable patch + integrity + boot.
+- Daily schedule: latest stable patch + integrity + boot, plus latest snapshot/RC
+  patch + integrity.
 - Manual/release regression: current targets plus representative maintained
   versions as appropriate.
 - Full legacy sweep: manual diagnostic operation, not routine release work.
@@ -176,21 +192,28 @@ Implemented:
 
 - `scripts/check-minecraft-compatibility.sh` resolves Mojang current versions and
   runs repeatable patch probes.
+- A probe only passes patch/integrity when the requested run creates a fresh,
+  non-empty, readable `out/<version>.jar`.
+- The latest stable target can be boot-smoked in an isolated temporary server
+  directory; success requires reaching the normal server startup marker before a
+  graceful `stop` is sent.
 - `scripts/Invoke-CompatibilityProbe.ps1` provides a local Windows entry point.
-- `.github/workflows/compatibility.yml` supports both manual matrix runs and a
-  daily stateless compatibility sentinel.
+- `.github/workflows/compatibility.yml` supports manual matrix runs, a daily
+  stateless compatibility sentinel, and focused PR validation of compatibility
+  harness changes.
 - Scheduled runs are restricted to current stable + current snapshot/RC, use a
   30-minute job timeout, cancel redundant in-progress runs, publish the report in
   the job summary, and retain the report artifact for 30 days.
+- Normal build CI validates relevant pull requests before merge.
 - ASM `9.10.1` supports reading current Java 25-era class files.
 
 Next implementation increments, in priority order:
 
-1. add deterministic patched-jar integrity assertions;
-2. add an ephemeral current-stable boot smoke test;
-3. add the smallest maintainable Velocity forwarding-boundary smoke test;
-4. improve SourceScanner confidence/diagnostics using multiple signals;
-5. only then consider release gating or automated issue lifecycle based on
+1. prove the new stable boot harness in GitHub Actions and keep it only if the
+   signal is reliable;
+2. add the smallest maintainable Velocity forwarding-boundary smoke test;
+3. improve SourceScanner confidence/diagnostics using multiple signals;
+4. only then consider release gating or automated issue lifecycle based on
    observed failure frequency.
 
 ## Stop Conditions
@@ -198,6 +221,10 @@ Next implementation increments, in priority order:
 Reduce the sentinel back to patch + integrity + boot if the forwarding fixture
 requires materially more maintenance than VanillaCord itself, produces mostly
 harness failures, or tracks Minecraft protocol changes unrelated to forwarding.
+If the boot fixture itself becomes a source of frequent false failures, reduce it
+to a cheaper executable-jar/runtime sanity check rather than adding more server
+orchestration.
+
 Do not add compatibility-management infrastructure unless repeated real failures
 show that the simpler workflow is insufficient.
 

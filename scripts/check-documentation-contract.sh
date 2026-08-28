@@ -14,6 +14,7 @@ required=(
   docs/compatibility.md
   docs/artifact-retention.md
   docs/index.html
+  scripts/apply-github-metadata.py
 )
 for path in "${required[@]}"; do
   test -s "$path" || { echo "Missing required documentation surface: $path" >&2; exit 1; }
@@ -41,6 +42,7 @@ assert contract['validation']['compatibility_tiers'] == {
 }
 assert contract['documentation']['artifact_retention'] == 'docs/artifact-retention.md'
 assert contract['public_surface']['github_metadata'] == 'GITHUB_METADATA.json'
+assert contract['public_surface']['metadata_apply'] == 'scripts/apply-github-metadata.py'
 assert contract['public_surface']['pages_entrypoint'] == 'docs/index.html'
 assert contract['public_surface']['pages_url'] == metadata['homepage'] == metadata['pages']['url']
 assert metadata['repository'] == contract['repository']

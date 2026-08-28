@@ -16,6 +16,8 @@ on:
       - '.github/workflows/build.yml'
       - 'VERSIONING.md'
       - 'ARTIFACT_IDENTITY.md'
+      - 'README.md'
+      - 'AGENTS.md'
       - 'MODERNIZATION_PLAN.md'
       - 'docs/build-modernization-status.md'
   pull_request:
@@ -34,6 +36,8 @@ on:
       - '.github/workflows/compatibility.yml'
       - 'VERSIONING.md'
       - 'ARTIFACT_IDENTITY.md'
+      - 'README.md'
+      - 'AGENTS.md'
       - 'MODERNIZATION_PLAN.md'
       - 'docs/build-modernization-status.md'
   release:

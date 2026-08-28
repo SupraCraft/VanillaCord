@@ -28,6 +28,8 @@
     <properties>
         <bridge.owner>mark-e-deyoung</bridge.owner>
         <bridge.version>0.1.0-SNAPSHOT</bridge.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
@@ -127,9 +129,6 @@
         <sourceDirectory>java</sourceDirectory>
         <testSourceDirectory>test/java</testSourceDirectory>
         <resources>
-            <resource>
-                <directory>resources</directory>
-            </resource>
             <resource>
                 <directory>${project.basedir}</directory>
                 <includes>

@@ -42,6 +42,8 @@ env:
   BRIDGE_VERSION: ${{ inputs.bridge_version || vars.BRIDGE_VERSION || '' }}
   BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
   BRIDGE_PACKAGES_TOKEN: ${{ secrets.BRIDGE_PACKAGES_TOKEN || github.token }}
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  SOURCE_REF: ${{ github.head_ref || github.ref }}
 
 permissions:
   contents: read
@@ -100,8 +102,8 @@ jobs:
           cat > BUILD-METADATA.properties <<EOF
           vanillacord.version=${{ steps.version.outputs.VALUE }}
           bridge.version=${BRIDGE_VERSION}
-          git.commit=${GITHUB_SHA}
-          git.ref=${GITHUB_REF}
+          git.commit=${SOURCE_SHA}
+          git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
           EOF
 
@@ -110,13 +112,12 @@ jobs:
           mvn -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
           -Dbridge.version=${BRIDGE_VERSION}
-          -Dbuild.commit=${GITHUB_SHA}
-          -Dbuild.ref=${GITHUB_REF}
+          -Dbuild.commit=${SOURCE_SHA}
+          -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
       - name: Generate checksums
-        run: |
-          sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+        run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
 
       - name: Upload build evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -198,8 +199,8 @@ jobs:
           cat > BUILD-METADATA.properties <<EOF
           vanillacord.version=${{ steps.version.outputs.VALUE }}
           bridge.version=${BRIDGE_VERSION}
-          git.commit=${GITHUB_SHA}
-          git.ref=${GITHUB_REF}
+          git.commit=${SOURCE_SHA}
+          git.ref=${SOURCE_REF}
           github.run=${GITHUB_RUN_NUMBER}
           EOF
 
@@ -208,8 +209,8 @@ jobs:
           mvn -B verify
           -Dbridge.owner=${BRIDGE_OWNER}
           -Dbridge.version=${BRIDGE_VERSION}
-          -Dbuild.commit=${GITHUB_SHA}
-          -Dbuild.ref=${GITHUB_REF}
+          -Dbuild.commit=${SOURCE_SHA}
+          -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
       - name: Generate checksums

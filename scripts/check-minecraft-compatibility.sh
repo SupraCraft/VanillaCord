@@ -105,32 +105,50 @@ done
 required_failed=0
 best_effort_failed=0
 
+record_failure() {
+  local required="$1"
+  if [[ "$required" == "true" ]]; then
+    required_failed=1
+  else
+    best_effort_failed=1
+  fi
+}
+
 run_probe() {
   local tier="$1"
   local version="$2"
   local required="$3"
+  local output_jar="out/${version}.jar"
 
   if ! version_exists "$version"; then
     echo "| $tier | \`$version\` | missing from Mojang manifest |" >> "$REPORT_PATH"
-    if [[ "$required" == "true" ]]; then
-      required_failed=1
-    else
-      best_effort_failed=1
-    fi
+    record_failure "$required"
     return
   fi
 
+  # Never accept stale output from an earlier probe as evidence for this run.
+  rm -f "$output_jar"
+
   echo "Patching Minecraft $version ($tier)"
-  if java -jar "$JAR_PATH" "$version"; then
-    echo "| $tier | \`$version\` | pass |" >> "$REPORT_PATH"
-  else
-    echo "| $tier | \`$version\` | fail |" >> "$REPORT_PATH"
-    if [[ "$required" == "true" ]]; then
-      required_failed=1
-    else
-      best_effort_failed=1
-    fi
+  if ! java -jar "$JAR_PATH" "$version"; then
+    echo "| $tier | \`$version\` | patch failed |" >> "$REPORT_PATH"
+    record_failure "$required"
+    return
   fi
+
+  if [[ ! -s "$output_jar" ]]; then
+    echo "| $tier | \`$version\` | patch exited successfully but output jar is missing/empty |" >> "$REPORT_PATH"
+    record_failure "$required"
+    return
+  fi
+
+  if ! jar tf "$output_jar" >/dev/null 2>&1; then
+    echo "| $tier | \`$version\` | patched output is not a readable jar |" >> "$REPORT_PATH"
+    record_failure "$required"
+    return
+  fi
+
+  echo "| $tier | \`$version\` | pass (patch + jar integrity) |" >> "$REPORT_PATH"
 }
 
 for version in $required_versions; do

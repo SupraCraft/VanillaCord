@@ -50,7 +50,7 @@ public final class Downloader {
 
         final int length;
         if ((length = args.length) == 0) {
-            System.out.println("This entry point requires you to specify at least one minecraft version to patch");
+            System.err.println("[VC-E001] At least one Minecraft version is required.");
             System.exit(1);
         }
         try {
@@ -62,9 +62,7 @@ public final class Downloader {
                 if (!Files.exists(library.resolve((version = args[i] = args[i++].toLowerCase(Locale.ENGLISH)) + ".jar"))) {
                     if (downloads == null) downloads = new Downloader();
                     if (downloads.find(version) == null) {
-                        System.err.print("Cannot find version metadata online for Minecraft ");
-                        System.err.println(version);
-                        System.exit(1);
+                        throw new IllegalArgumentException("[VC-E002] Cannot find version metadata online for Minecraft " + version);
                     }
                 }
             }
@@ -88,7 +86,7 @@ public final class Downloader {
                     final JSONObject location;
                     if (downloads == null) downloads = new Downloader();
                     if ((location = downloads.find(version)) == null) {
-                        throw new IllegalStateException("Cannot find version metadata online for Minecraft " + version);
+                        throw new IllegalStateException("[VC-E002] Cannot find version metadata online for Minecraft " + version);
                     }
                     System.out.print("Downloading Minecraft server version ");
                     System.out.println(version);
@@ -101,13 +99,13 @@ public final class Downloader {
                     }
 
                     if (i != size) {
-                        throw new IllegalStateException("Downloaded profile is not as expected: File size: " + i + " != " + size);
+                        throw new IllegalStateException("[VC-E003] Downloaded version profile has unexpected size: " + i + " != " + size);
                     }
 
                     MessageDigest sha1;
                     (sha1 = MessageDigest.getInstance("SHA-1")).update(data, 0, i);
                     if (!Digest.equals(digest = sha1.digest(), location.getString("sha1"))) {
-                        throw new IllegalStateException("Downloaded profile is not as expected: SHA-1 checksum: " + Digest.toHex(digest) + " != " + location.getString("sha1"));
+                        throw new IllegalStateException("[VC-E003] Downloaded version profile has unexpected SHA-1: " + Digest.toHex(digest) + " != " + location.getString("sha1"));
                     }
 
                     JSONObject profile;
@@ -123,10 +121,10 @@ public final class Downloader {
 
                         file.close();
                         if (Files.size(in) != profile.getLong("size")) {
-                            throw new IllegalStateException("Downloaded jarfile is not as expected: File size: " + Files.size(in) + " != " + profile.getLong("size"));
+                            throw new IllegalStateException("[VC-E004] Downloaded server JAR has unexpected size: " + Files.size(in) + " != " + profile.getLong("size"));
                         }
                         if (!Digest.equals(digest = sha1.digest(), profile.getString("sha1"))) {
-                            throw new IllegalStateException("Downloaded jarfile is not as expected: SHA-1 checksum: " + Digest.toHex(digest) + " != " + profile.getString("sha1"));
+                            throw new IllegalStateException("[VC-E004] Downloaded server JAR has unexpected SHA-1: " + Digest.toHex(digest) + " != " + profile.getString("sha1"));
                         }
                     } catch (Throwable e) {
                         Files.deleteIfExists(in);
@@ -139,7 +137,13 @@ public final class Downloader {
             }
 
         } catch (Throwable e) {
-            e.printStackTrace();
+            String message = e.getMessage();
+            if (message != null && message.startsWith("[VC-")) {
+                System.err.println(message);
+            } else {
+                System.err.println("[VC-E999] Patching failed: " + e.getClass().getName() + ((message == null)? "" : ": " + message));
+            }
+            e.printStackTrace(System.err);
             System.exit(1);
         }
     }

@@ -1,0 +1,43 @@
+name: wrapper-bootstrap
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - '.github/workflows/wrapper-bootstrap.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up JDK
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Generate Maven Wrapper 3.3.4 for Maven 3.9.16
+        run: mvn -B org.apache.maven.plugins:maven-wrapper-plugin:3.3.4:wrapper -Dmaven=3.9.16 -Dtype=only-script
+
+      - name: Verify generated wrapper
+        run: |
+          grep -F 'wrapperVersion=3.3.4' .mvn/wrapper/maven-wrapper.properties
+          grep -F 'apache-maven-3.9.16-bin.zip' .mvn/wrapper/maven-wrapper.properties
+          test -s mvnw
+          test -s mvnw.cmd
+
+      - name: Upload generated wrapper
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: generated-maven-wrapper
+          path: |
+            mvnw
+            mvnw.cmd
+            .mvn/wrapper/maven-wrapper.properties
+          if-no-files-found: error

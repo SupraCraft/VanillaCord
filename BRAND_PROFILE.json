@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "organization_brand": "SupraCraft",
+  "brand_contract_version": "0.1.0-candidate",
+  "governance_source": "SupraCraft/brand-governance-private:profiles/projects/VanillaCord.json",
+  "repository": "SupraCraft/VanillaCord",
+  "project": "VanillaCord",
+  "families": ["minecraft-server", "upstream-sensitive-fork"],
+  "status": "candidate",
+  "snapshot_policy": "vendored-reviewed-snapshot-no-private-runtime-dependency",
+  "identity": {
+    "metaphor": "a warm vanilla-cream cord connecting a plain vanilla server endpoint to a proxy/network endpoint",
+    "cord_is_primary": true,
+    "bridge_visible_in_user_identity": false
+  },
+  "public_surface": {
+    "manifest": "docs/assets/brand/brand.json",
+    "icon": "docs/assets/brand/icon.svg",
+    "hero": "docs/assets/brand/hero.svg",
+    "guidelines": "docs/brand-guidelines.md"
+  },
+  "packaged_resources": {
+    "jar_icon": "META-INF/supracraft/vanillacord/icon.svg",
+    "source_path": "resources/META-INF/supracraft/vanillacord/icon.svg"
+  }
+}

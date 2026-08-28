@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "project": "VanillaCord",
+  "identity": "vanilla Minecraft server proxy forwarding",
+  "metaphor": "a vanilla-cream cord connecting a plain server endpoint to a proxy endpoint",
+  "organization_brand": {
+    "name": "SupraCraft",
+    "contract_version": "0.1.0-candidate",
+    "profile_snapshot": "BRAND_PROFILE.json",
+    "governance_source": "SupraCraft/brand-governance-private:profiles/projects/VanillaCord.json",
+    "runtime_dependency_on_private_repo": false
+  },
+  "assets": {
+    "icon": "assets/brand/icon.svg",
+    "hero": "assets/brand/hero.svg",
+    "jar_icon": "META-INF/supracraft/vanillacord/icon.svg"
+  },
+  "palette": {
+    "vanilla_cream": "#F1E2BF",
+    "toasted_vanilla": "#D9BE8B",
+    "copper": "#B86B3F",
+    "grass": "#6F8C45",
+    "stone": "#747A76",
+    "signal_cyan": "#3DA2B8",
+    "dark_outline": "#514A42",
+    "paper": "#F7F2E7"
+  },
+  "rules": [
+    "The cord is the primary VanillaCord motif.",
+    "Use cream/ivory to express both vanilla flavor and plain/stock Minecraft.",
+    "Keep Bridge out of the user-facing identity; it is an implementation dependency.",
+    "Anchor the cord visibly between endpoints; avoid isolated looped silhouettes.",
+    "Use Minecraft-adjacent block geometry without copying Minecraft textures, logos, fonts, mobs, or UI.",
+    "Keep claims factual, brief, and traceable to repository contracts."
+  ]
+}

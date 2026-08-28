@@ -157,9 +157,6 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
-      - name: Create temporary compatibility alias
-        run: cp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
-
       - name: Verify artifact contract
         run: >-
           bash ./scripts/verify-artifact-contract.sh
@@ -169,11 +166,11 @@ jobs:
           "${SOURCE_SHA}"
           ARTIFACT-INVENTORY.txt
 
-      - name: Verify compatibility alias
-        run: cmp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+      - name: Verify no legacy standalone alias
+        run: test ! -e artifacts/VanillaCord.jar
 
       - name: Generate checksums
-        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" build/vanillacord-sbom.json > SHA256SUMS
 
       - name: Upload build evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -181,7 +178,6 @@ jobs:
           name: supracraft-vanillacord-${{ steps.version.outputs.VALUE }}
           path: |
             artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
-            artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
             ARTIFACT-INVENTORY.txt
@@ -276,9 +272,6 @@ jobs:
           -Dbuild.ref=${SOURCE_REF}
           -Dbuild.number=${GITHUB_RUN_NUMBER}
 
-      - name: Create temporary compatibility alias
-        run: cp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
-
       - name: Verify artifact contract
         run: >-
           bash ./scripts/verify-artifact-contract.sh
@@ -288,11 +281,11 @@ jobs:
           ""
           ARTIFACT-INVENTORY.txt
 
-      - name: Verify compatibility alias
-        run: cmp "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar
+      - name: Verify no legacy standalone alias
+        run: test ! -e artifacts/VanillaCord.jar
 
       - name: Generate checksums
-        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+        run: sha256sum "artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar" build/vanillacord-sbom.json > SHA256SUMS
 
       - name: Publish release assets
         uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d
@@ -300,7 +293,6 @@ jobs:
           tag_name: ${{ steps.vars.outputs.TAG }}
           files: |
             artifacts/supracraft-vanillacord-${{ steps.version.outputs.VALUE }}.jar
-            artifacts/VanillaCord.jar
             build/vanillacord-sbom.json
             BUILD-METADATA.properties
             ARTIFACT-INVENTORY.txt

@@ -5,10 +5,13 @@ import argparse
 import json
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+REMOTE_ATTEMPTS = 30
+REMOTE_DELAY_SECONDS = 5
 
 
 def load_json(path: Path):
@@ -19,6 +22,11 @@ class SiteReader:
     def __init__(self, site_dir=None, base_url=None):
         self.site_dir = Path(site_dir).resolve() if site_dir else None
         self.base_url = base_url.rstrip("/") if base_url else None
+        self.cache_key = None
+
+    def begin_attempt(self, attempt: int):
+        if self.base_url is not None:
+            self.cache_key = f"{int(time.time())}-{attempt}"
 
     def read_text(self, relative_path: str) -> str:
         if self.site_dir is not None:
@@ -28,37 +36,23 @@ class SiteReader:
             return path.read_text(encoding="utf-8")
 
         url = f"{self.base_url}/{relative_path.lstrip('/')}"
-        error = None
-        for attempt in range(10):
-            try:
-                request = urllib.request.Request(
-                    url,
-                    headers={"User-Agent": "SupraCraft-public-surface-check/1"},
-                )
-                with urllib.request.urlopen(request, timeout=20) as response:
-                    if response.status != 200:
-                        raise AssertionError(f"{url}: HTTP {response.status}")
-                    return response.read().decode("utf-8")
-            except (OSError, UnicodeError, urllib.error.HTTPError, urllib.error.URLError) as exc:
-                error = exc
-                if attempt == 9:
-                    break
-                time.sleep(3)
-        raise AssertionError(f"unable to read {url}: {error}")
+        if self.cache_key:
+            url = f"{url}?{urllib.parse.urlencode({'supra_check': self.cache_key})}"
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "SupraCraft-public-surface-check/1",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            if response.status != 200:
+                raise AssertionError(f"{url}: HTTP {response.status}")
+            return response.read().decode("utf-8")
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--site-dir")
-    mode.add_argument("--base-url")
-    args = parser.parse_args()
-
-    contract = load_json(ROOT / "PROJECT_CONTRACT.json")
-    metadata = load_json(ROOT / "GITHUB_METADATA.json")
-    expected_brand = load_json(ROOT / "docs/assets/brand/brand.json")
-    reader = SiteReader(site_dir=args.site_dir, base_url=args.base_url)
-
+def validate_site(reader, contract, metadata, expected_brand):
     page = reader.read_text("index.html")
     assert '<html lang="en">' in page
     assert '<meta name="viewport"' in page
@@ -109,6 +103,51 @@ def main():
         assert (
             f'id="java-release">{contract["toolchain"]["java_bytecode_release"]}</span>' in page
         ), "rendered Java release does not match PROJECT_CONTRACT.json"
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--site-dir")
+    mode.add_argument("--base-url")
+    args = parser.parse_args()
+
+    contract = load_json(ROOT / "PROJECT_CONTRACT.json")
+    metadata = load_json(ROOT / "GITHUB_METADATA.json")
+    expected_brand = load_json(ROOT / "docs/assets/brand/brand.json")
+    reader = SiteReader(site_dir=args.site_dir, base_url=args.base_url)
+
+    if args.site_dir:
+        validate_site(reader, contract, metadata, expected_brand)
+    else:
+        last_error = None
+        retryable = (
+            AssertionError,
+            json.JSONDecodeError,
+            OSError,
+            UnicodeError,
+            urllib.error.HTTPError,
+            urllib.error.URLError,
+        )
+        for attempt in range(1, REMOTE_ATTEMPTS + 1):
+            reader.begin_attempt(attempt)
+            try:
+                validate_site(reader, contract, metadata, expected_brand)
+                break
+            except retryable as exc:
+                last_error = exc
+                if attempt == REMOTE_ATTEMPTS:
+                    raise AssertionError(
+                        f"deployed public-site contract did not converge after "
+                        f"{REMOTE_ATTEMPTS} attempts: {exc}"
+                    ) from exc
+                print(
+                    f"Public site not converged (attempt {attempt}/{REMOTE_ATTEMPTS}): {exc}",
+                    flush=True,
+                )
+                time.sleep(REMOTE_DELAY_SECONDS)
+        else:
+            raise AssertionError(f"deployed public-site contract did not converge: {last_error}")
 
     source = args.site_dir if args.site_dir else args.base_url
     print(f"Public-site contract OK: {source}")

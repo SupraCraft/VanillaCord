@@ -6,6 +6,9 @@ on:
     paths:
       - 'java/**'
       - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/wrapper/**'
       - 'scripts/check-minecraft-compatibility.sh'
       - 'scripts/verify-artifact-contract.sh'
       - '.github/workflows/build.yml'
@@ -29,7 +32,6 @@ on:
         required: false
         default: "1.17.1 1.16.5 1.12.2 1.8.9 1.7.10"
   schedule:
-    # Daily compatibility sentinel. Use an off-hour minute to reduce scheduler contention.
     - cron: "17 4 * * *"
 
 concurrency:
@@ -69,11 +71,14 @@ jobs:
           server-username: BRIDGE_PACKAGES_USERNAME
           server-password: BRIDGE_PACKAGES_TOKEN
 
+      - name: Verify pinned Maven
+        run: |
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
       - name: Configure pull request scope
         if: github.event_name == 'pull_request'
         run: |
-          # Runtime, packaging, and compatibility-harness PRs must prove the
-          # latest stable can still be patched, pass integrity checks, and boot.
           echo "VANILLACORD_INCLUDE_SNAPSHOT=false" >> "$GITHUB_ENV"
           echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
@@ -82,9 +87,6 @@ jobs:
       - name: Configure scheduled sentinel scope
         if: github.event_name == 'schedule'
         run: |
-          # Mojang changed; historical Minecraft versions did not. Keep the daily
-          # sentinel focused on current stable + current snapshot/RC. The full
-          # maintained/legacy matrices remain available through workflow_dispatch.
           echo "VANILLACORD_INCLUDE_SNAPSHOT=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
@@ -103,9 +105,9 @@ jobs:
       - name: Build VanillaCord
         run: |
           if [[ -n "${BRIDGE_VERSION:-}" ]]; then
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
+            ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
           else
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER}
+            ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER}
           fi
 
       - name: Run Minecraft compatibility probe

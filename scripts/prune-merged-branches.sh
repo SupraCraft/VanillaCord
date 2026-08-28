@@ -3,6 +3,7 @@ set -euo pipefail
 
 MODE="${1:---dry-run}"
 DEFAULT_BRANCH="${2:-master}"
+EXCEPTIONS_FILE="maintenance/retired-branch-exceptions.tsv"
 
 case "$MODE" in
   --dry-run|--apply) ;;
@@ -17,10 +18,23 @@ git rev-parse --verify "$DEFAULT_REF" >/dev/null
 repo="${GITHUB_REPOSITORY:-}"
 owner="${repo%%/*}"
 
+is_explicitly_retired() {
+  local branch="$1" sha="$2" recorded_branch recorded_sha evidence
+  [[ -f "$EXCEPTIONS_FILE" ]] || return 1
+  while IFS=$'\t' read -r recorded_branch recorded_sha evidence; do
+    [[ -n "$recorded_branch" && "${recorded_branch:0:1}" != "#" ]] || continue
+    if [[ "$recorded_branch" == "$branch" && "$recorded_sha" == "$sha" ]]; then
+      return 0
+    fi
+  done < "$EXCEPTIONS_FILE"
+  return 1
+}
+
 is_retired_branch() {
   local branch="$1"
   local ref="refs/remotes/origin/${branch}"
   local sha
+  sha="$(git rev-parse "$ref")"
 
   # Ordinary merge/rebase ancestry is sufficient proof.
   if git merge-base --is-ancestor "$ref" "$DEFAULT_REF"; then
@@ -31,7 +45,6 @@ is_retired_branch() {
   # accept only a merged PR whose recorded head SHA exactly equals the live
   # branch tip. Reused or advanced branches therefore fail closed.
   if [[ -n "$repo" && -n "${GH_TOKEN:-}" ]] && command -v gh >/dev/null 2>&1; then
-    sha="$(git rev-parse "$ref")"
     if [[ "$(gh api --method GET "repos/${repo}/pulls" \
       -f state=closed \
       -f "head=${owner}:${branch}" \
@@ -40,7 +53,9 @@ is_retired_branch() {
     fi
   fi
 
-  return 1
+  # A reviewed exception may retire a closed/superseded branch only when its
+  # live tip still matches the exact recorded SHA. Drift invalidates proof.
+  is_explicitly_retired "$branch" "$sha"
 }
 
 candidates=()

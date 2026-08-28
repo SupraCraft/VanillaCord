@@ -4,7 +4,11 @@ on:
   pull_request:
     branches: [master, main]
     paths:
+      - 'java/**'
+      - 'pom.xml'
       - 'scripts/check-minecraft-compatibility.sh'
+      - 'scripts/verify-artifact-contract.sh'
+      - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
   workflow_dispatch:
     inputs:
@@ -68,8 +72,8 @@ jobs:
       - name: Configure pull request scope
         if: github.event_name == 'pull_request'
         run: |
-          # Exercise changes to the compatibility harness itself without paying
-          # for snapshot or historical regression coverage on every review.
+          # Runtime, packaging, and compatibility-harness PRs must prove the
+          # latest stable can still be patched, pass integrity checks, and boot.
           echo "VANILLACORD_INCLUDE_SNAPSHOT=false" >> "$GITHUB_ENV"
           echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"

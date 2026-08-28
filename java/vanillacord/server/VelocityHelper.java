@@ -80,22 +80,11 @@ public class VelocityHelper extends ForwardingHelper {
                 throw QuietException.notify("Unknown transaction ID: " + id);
             if (data == null)
                 throw QuietException.notify("If you wish to use modern IP forwarding, please enable it in your Velocity config as well!");
-            if (invalidSignature(data)) {
-                throw QuietException.notify("Received invalid IP forwarding data. Did you use the right forwarding secret?");
-            }
 
-            // Retrieve IP forwarding data
-            readVarint(data); // we don't do anything with the protocol version at this time
-
-            new Invocation(PlayerConnection.class).ofMethod("setAddress").with(connection).with(readString(data)).invoke();
-            UUID playerId = new UUID(data.readLong(), data.readLong());
-            String playerName = readString(data);
-            Multimap<String, Property> props = ArrayListMultimap.create();
-            for (int i = 0, length = readVarint(data); i < length; ++i) {
-                final String name = readString(data);
-                props.put(name, new Property(name, readString(data), (data.readBoolean())? readString(data) : null));
-            }
-            GameProfile profile = ForwardingHelper.createProfile(playerId, playerName, props);
+            ForwardedPlayerData forwarded = parseForwardingData(data);
+            new Invocation(PlayerConnection.class).ofMethod("setAddress").with(connection).with(forwarded.address()).invoke();
+            GameProfile profile = ForwardingHelper.createProfile(
+                    forwarded.playerId(), forwarded.playerName(), forwarded.properties());
             channel.attr(PROFILE_KEY).set(profile);
 
             // Continue login flow
@@ -122,6 +111,25 @@ public class VelocityHelper extends ForwardingHelper {
             throw QuietException.show(e);
         }
     }
+
+    ForwardedPlayerData parseForwardingData(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
+        if (invalidSignature(data)) {
+            throw QuietException.notify("Received invalid IP forwarding data. Did you use the right forwarding secret?");
+        }
+
+        readVarint(data); // we don't do anything with the protocol version at this time
+        String address = readString(data);
+        UUID playerId = new UUID(data.readLong(), data.readLong());
+        String playerName = readString(data);
+        Multimap<String, Property> props = ArrayListMultimap.create();
+        for (int i = 0, length = readVarint(data); i < length; ++i) {
+            final String name = readString(data);
+            props.put(name, new Property(name, readString(data), (data.readBoolean())? readString(data) : null));
+        }
+        return new ForwardedPlayerData(address, playerId, playerName, props);
+    }
+
+    record ForwardedPlayerData(String address, UUID playerId, String playerName, Multimap<String, Property> properties) {}
 
     private boolean invalidSignature(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] signature = new byte[32];

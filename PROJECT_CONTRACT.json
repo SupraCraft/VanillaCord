@@ -57,6 +57,12 @@
     "release_assets": "durable-historical-provenance",
     "bridge_package_cleanup": "owned-by-SupraCraft/Bridge-retention-policy"
   },
+  "public_surface": {
+    "github_metadata": "GITHUB_METADATA.json",
+    "pages_entrypoint": "docs/index.html",
+    "pages_url": "https://supracraft.github.io/VanillaCord/",
+    "upstream_attribution_required": true
+  },
   "provenance": {
     "source_repository": "SupraCraft/VanillaCord",
     "upstream_repository": "ME1312/VanillaCord",
@@ -74,6 +80,8 @@
     "compatibility_operations": "docs/compatibility.md",
     "diagnostics": "docs/diagnostics.md",
     "artifact_retention": "docs/artifact-retention.md",
+    "github_metadata": "GITHUB_METADATA.json",
+    "pages_entrypoint": "docs/index.html",
     "modernization_ledger": "docs/build-modernization-status.md",
     "historical_modernization_record": "MODERNIZATION_PLAN.md"
   }

@@ -1,14 +1,41 @@
 ---
 name: Feature Request
-about: Suggest something to add to VanillaCord
+about: Propose a scoped VanillaCord capability or compatibility improvement
 
 ---
 
-### What Should Be Added
-Describe what you'd like to see added here.
+## Problem
 
-### Why It Should be Added
-Tell us why you think it should be added. Be sure to include reasons why everyone else would find it useful as well.
+Describe the concrete problem or failure mode. Prefer an observed limitation over a general desire for more machinery.
 
-### What's The Alternative
-Describe alternative methods that may already exist right now that accomplish the same goal, and why they suck.
+## Proposed outcome
+
+Describe what should become possible or more reliable. Keep the proposal outcome-oriented; implementation can be discussed separately.
+
+## Scope
+
+Identify the affected surface:
+
+- Minecraft version(s) or release channel, if relevant
+- forwarding mode(s)
+- patching / SourceScanner
+- build / packaging / dependency
+- artifact / version / provenance
+- automation / compatibility sentinel
+- documentation / operator experience
+
+## Evidence / motivation
+
+Explain why the change is worth maintaining. Include production failures, compatibility evidence, repeated manual work, or another concrete signal when available.
+
+## Alternatives
+
+Describe simpler existing approaches and why they do not solve the problem adequately. Prefer extending deterministic existing machinery over creating parallel systems.
+
+## Compatibility and maintenance cost
+
+Call out likely runtime/API compatibility impact, additional CI/runtime cost, new dependencies, required local fixtures, or upstream-flowability concerns.
+
+## Acceptance criteria
+
+List the smallest deterministic conditions that would prove the feature useful and complete.

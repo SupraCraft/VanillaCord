@@ -1,53 +1,71 @@
 # VanillaCord versioning and provenance
 
-VanillaCord and Bridge use independent versioning. VanillaCord does not share Bridge's version number; it records the exact Bridge Maven coordinate used to build each artifact.
+VanillaCord and Bridge use independent versioning. VanillaCord never shares Bridge's version number; every build records the exact canonical Bridge coordinate it consumed.
 
-## Source version
+## Canonical Maven identity
 
-The checked-in POM is the single source of truth for the next VanillaCord development line and carries `<next-release>-SNAPSHOT`. The repository's established release sequence is `v2.1` through `v2.8`, so development following `v2.8` uses `2.9-SNAPSHOT`.
+New artifacts from this fork use:
 
-CI may rewrite the effective Maven version for an individual build without committing that generated value back to the repository. Workflow code derives the numeric base from the POM rather than duplicating it.
+`io.github.supracraft.vanillacord:vanillacord:<version>`
 
-## CI versions
+The historical `net.ME1312:VanillaCord` coordinate identifies upstream/history and is not used for new SupraCraft artifacts. Java packages remain `vanillacord.*` because they are already neutral API/runtime names; changing them would add compatibility churn and impede upstream contribution without improving artifact ownership.
 
-Ordinary non-tagged builds read the source POM, strip `-SNAPSHOT`, and use `<next-release>-SNAPSHOT.<GitHub run number>`. For the current development line this produces versions such as `2.9-SNAPSHOT.62`.
+## Source and development versions
 
-The JAR manifest also records the source Git commit, ref, and run number.
+The checked-in POM is the single source of truth for the next release line and carries `X.Y.Z-dev`. Following upstream/fork release `v2.8`, the next normalized release line is `2.9.0`, so the checked-in development version is `2.9.0-dev`.
 
-Development/PR builds may resolve the newest compatible Bridge snapshot when no explicit `BRIDGE_VERSION` is supplied. Once resolved, that exact version is passed to Maven and recorded in the artifact metadata and SBOM.
+Ordinary CI appends the GitHub Actions run number:
 
-## Release versions
+`X.Y.Z-dev.<run-number>`
 
-VanillaCord preserves its established `v<major>.<minor>` tag convention (for example `v2.8`). A patch component may be added if a future maintenance release needs one. The effective Maven/artifact version is the tag with the leading `v` removed.
+Example: `2.9.0-dev.81`.
 
-The source POM must advance to the next intended development release after a release line is established; it must not remain on an unrelated historical Maven version.
+These are immutable ordinary Maven versions. `SNAPSHOT` is intentionally not used. Earlier forms such as `2.9-SNAPSHOT.62` did not end in `-SNAPSHOT`, so Maven did not treat them as snapshots; the word added ambiguity without providing snapshot semantics.
 
-For maximum rebuild reproducibility, a release may be invoked with an explicit exact `bridge_version`. If it is omitted, CI resolves Bridge once and records that exact resolved coordinate in all release provenance assets. A later rebuild can then supply the recorded value explicitly.
+## Release candidates and releases
 
-## Artifact identity
+Release candidates use `X.Y.Z-rc.N`. Stable releases use `X.Y.Z` and tags use `vX.Y.Z` going forward. Historical `v2.1` through `v2.8` tags remain valid history and are not rewritten.
 
-`VanillaCord.jar` retains its stable filename for operational compatibility. The artifact itself records:
+A release build strips the leading `v` from its tag. After a stable release, the checked-in POM advances to the next intended `X.Y.Z-dev` line.
 
-- `Implementation-Title`
+## Bridge relationship
+
+Canonical Bridge coordinates use `io.github.supracraft.bridge`. Normal development CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build to expose integration failures early. The resulting exact coordinate is recorded in the manifest, SBOM, and build metadata.
+
+Release builds do not float automatically. Unless an explicit `bridge_version` is provided, they use the exact Bridge version pinned in the source POM. This makes the release dependency input reconstructable without relying on repository `latest` metadata.
+
+## Artifact filenames
+
+The canonical standalone JAR is versioned and producer-qualified:
+
+`supracraft-vanillacord-<version>.jar`
+
+During migration, CI and releases also emit `VanillaCord.jar` as a temporary byte-identical compatibility alias for existing deployments. The alias is copied from the canonical artifact after the build; it is never compiled independently. New automation must consume the canonical filename or Maven coordinate.
+
+The compatibility alias can be removed after known deployment consumers have migrated; its removal should be a deliberate compatibility change, not an incidental packaging cleanup.
+
+## Embedded provenance
+
+Every canonical JAR records:
+
+- `Implementation-Title: VanillaCord`
 - `Implementation-Version`
-- `Implementation-Vendor`
+- `Implementation-Vendor: SupraCraft`
 - `Build-Commit`
 - `Build-Ref`
 - `Build-Number`
+- `Source-Repository: SupraCraft/VanillaCord`
+- `Upstream-Repository: ME1312/VanillaCord`
 - `Bridge-Version`
+- `Bridge-Coordinate: io.github.supracraft.bridge:bridge:<exact-version>`
 
 CI additionally produces:
 
 - `vanillacord-sbom.json` — CycloneDX dependency inventory
-- `BUILD-METADATA.properties` — compact human/machine-readable build inputs
-- `SHA256SUMS` — hashes for the JAR and SBOM
-
-Release builds attach these beside `VanillaCord.jar`.
-
-## Bridge relationship
-
-Normal development intentionally allows a moving Bridge snapshot so integration failures surface early. Releases are auditable because the exact resolved Bridge coordinate is persisted. Bridge/VanillaCord lockstep releases are explicitly avoided; compatibility is expressed by dependency coordinates plus CI tests.
+- `BUILD-METADATA.properties` — human/machine-readable identity and build inputs
+- `ARTIFACT-INVENTORY.txt` — sorted JAR inventory
+- `SHA256SUMS` — canonical JAR, compatibility alias, and SBOM hashes
 
 ## Reproducibility
 
-Build timestamps are intentionally excluded from the embedded JAR manifest. Source commit, effective project version, exact Bridge version, and dependency SBOM provide the durable reconstruction inputs.
+Version strings identify release/development state, not source provenance. The Git commit, exact Bridge coordinate, Maven/wrapper versions, SBOM, and checksums carry reconstruction evidence separately. Build timestamps remain excluded from the embedded manifest; deterministic archive timestamps are handled by the separate reproducible-build modernization tranche.

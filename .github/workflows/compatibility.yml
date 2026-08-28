@@ -10,9 +10,12 @@ on:
       - 'mvnw.cmd'
       - '.mvn/wrapper/**'
       - 'scripts/check-minecraft-compatibility.sh'
+      - 'scripts/resolve-bridge-version.sh'
       - 'scripts/verify-artifact-contract.sh'
       - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
+      - 'ARTIFACT_IDENTITY.md'
+      - 'VERSIONING.md'
   workflow_dispatch:
     inputs:
       include_snapshot:
@@ -92,10 +95,9 @@ jobs:
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
           echo "VANILLACORD_BEST_EFFORT_LEGACY=none" >> "$GITHUB_ENV"
 
-      - name: Resolve Bridge version from GitHub Packages
+      - name: Resolve canonical Bridge dev build
         if: env.BRIDGE_VERSION == ''
         env:
-          BRIDGE_OWNER: ${{ env.BRIDGE_OWNER }}
           GITHUB_TOKEN: ${{ env.BRIDGE_PACKAGES_TOKEN }}
         run: |
           VERSION="$(bash ./scripts/resolve-bridge-version.sh)"
@@ -103,15 +105,16 @@ jobs:
           echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Build VanillaCord
+        run: ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
+
+      - name: Locate canonical VanillaCord artifact
         run: |
-          if [[ -n "${BRIDGE_VERSION:-}" ]]; then
-            ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
-          else
-            ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER}
-          fi
+          JAR="$(find artifacts -maxdepth 1 -type f -name 'supracraft-vanillacord-*.jar' -print -quit)"
+          test -n "$JAR"
+          echo "VANILLACORD_JAR=$JAR" >> "$GITHUB_ENV"
 
       - name: Run Minecraft compatibility probe
-        run: bash ./scripts/check-minecraft-compatibility.sh artifacts/VanillaCord.jar
+        run: bash ./scripts/check-minecraft-compatibility.sh "$VANILLACORD_JAR"
 
       - name: Add report to job summary
         if: always()

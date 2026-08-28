@@ -32,6 +32,10 @@
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <surefire.plugin.version>3.2.5</surefire.plugin.version>
+        <cyclonedx.maven.plugin.version>2.9.3</cyclonedx.maven.plugin.version>
+        <build.commit>unknown</build.commit>
+        <build.ref>unknown</build.ref>
+        <build.number>local</build.number>
     </properties>
 
     <profiles>
@@ -172,7 +176,18 @@
                     <finalName>VanillaCord</finalName>
                     <outputDirectory>artifacts</outputDirectory>
                     <archive>
-                        <manifestFile>resources/META-INF/MANIFEST.MF</manifestFile>
+                        <manifest>
+                            <mainClass>vanillacord.Downloader</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Title>VanillaCord</Implementation-Title>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Implementation-Vendor>SupraCraft</Implementation-Vendor>
+                            <Build-Commit>${build.commit}</Build-Commit>
+                            <Build-Ref>${build.ref}</Build-Ref>
+                            <Build-Number>${build.number}</Build-Number>
+                            <Bridge-Version>${bridge.version}</Bridge-Version>
+                        </manifestEntries>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -186,6 +201,25 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>${cyclonedx.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>make-sbom</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>makeBom</goal>
+                        </goals>
+                        <configuration>
+                            <outputFormat>json</outputFormat>
+                            <outputName>vanillacord-sbom</outputName>
+                            <includeBomSerialNumber>true</includeBomSerialNumber>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

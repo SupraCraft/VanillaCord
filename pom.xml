@@ -2,10 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>net.ME1312</groupId>
-    <artifactId>VanillaCord</artifactId>
-    <version>2.9-SNAPSHOT</version>
+    <groupId>io.github.supracraft.vanillacord</groupId>
+    <artifactId>vanillacord</artifactId>
+    <version>2.9.0-dev</version>
     <packaging>jar</packaging>
+    <name>SupraCraft VanillaCord</name>
+    <description>SupraCraft-maintained fork of ME1312/VanillaCord</description>
+    <url>https://github.com/SupraCraft/VanillaCord</url>
 
     <repositories>
         <repository>
@@ -26,8 +29,8 @@
     </pluginRepositories>
 
     <properties>
-        <bridge.owner>mark-e-deyoung</bridge.owner>
-        <bridge.version>0.1.0-SNAPSHOT</bridge.version>
+        <bridge.owner>SupraCraft</bridge.owner>
+        <bridge.version>0.1.0-dev.34</bridge.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>21</maven.compiler.release>
@@ -41,87 +44,42 @@
         <build.commit>unknown</build.commit>
         <build.ref>unknown</build.ref>
         <build.number>local</build.number>
+        <source.repository>SupraCraft/VanillaCord</source.repository>
+        <upstream.repository>ME1312/VanillaCord</upstream.repository>
     </properties>
 
     <profiles>
         <profile>
             <id>bridge-owner-env</id>
             <activation>
-                <property>
-                    <name>env.BRIDGE_OWNER</name>
-                </property>
+                <property><name>env.BRIDGE_OWNER</name></property>
             </activation>
-            <properties>
-                <bridge.owner>${env.BRIDGE_OWNER}</bridge.owner>
-            </properties>
+            <properties><bridge.owner>${env.BRIDGE_OWNER}</bridge.owner></properties>
         </profile>
         <profile>
             <id>bridge-owner-gh</id>
             <activation>
-                <property>
-                    <name>env.GITHUB_REPOSITORY_OWNER</name>
-                </property>
+                <property><name>env.GITHUB_REPOSITORY_OWNER</name></property>
             </activation>
-            <properties>
-                <bridge.owner>${env.GITHUB_REPOSITORY_OWNER}</bridge.owner>
-            </properties>
+            <properties><bridge.owner>${env.GITHUB_REPOSITORY_OWNER}</bridge.owner></properties>
         </profile>
         <profile>
             <id>bridge-version-env</id>
             <activation>
-                <property>
-                    <name>env.BRIDGE_VERSION</name>
-                </property>
+                <property><name>env.BRIDGE_VERSION</name></property>
             </activation>
-            <properties>
-                <bridge.version>${env.BRIDGE_VERSION}</bridge.version>
-            </properties>
+            <properties><bridge.version>${env.BRIDGE_VERSION}</bridge.version></properties>
         </profile>
     </profiles>
 
     <dependencies>
-        <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
-            <version>2.0.51</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.mojang</groupId>
-            <artifactId>authlib</artifactId>
-            <version>6.0.53</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.107.Final</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>9.10.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.ME1312.ASM</groupId>
-            <artifactId>bridge</artifactId>
-            <version>${bridge.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.ME1312.ASM</groupId>
-            <artifactId>bridge-asm</artifactId>
-            <version>${bridge.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <dependency><groupId>com.alibaba.fastjson2</groupId><artifactId>fastjson2</artifactId><version>2.0.51</version><scope>compile</scope></dependency>
+        <dependency><groupId>com.mojang</groupId><artifactId>authlib</artifactId><version>6.0.53</version><scope>provided</scope></dependency>
+        <dependency><groupId>io.netty</groupId><artifactId>netty-all</artifactId><version>4.1.107.Final</version><scope>provided</scope></dependency>
+        <dependency><groupId>org.ow2.asm</groupId><artifactId>asm</artifactId><version>9.10.1</version><scope>compile</scope></dependency>
+        <dependency><groupId>io.github.supracraft.bridge</groupId><artifactId>bridge</artifactId><version>${bridge.version}</version><scope>provided</scope></dependency>
+        <dependency><groupId>io.github.supracraft.bridge</groupId><artifactId>bridge-asm</artifactId><version>${bridge.version}</version><scope>compile</scope></dependency>
+        <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>${junit.jupiter.version}</version><scope>test</scope></dependency>
     </dependencies>
 
     <build>
@@ -131,68 +89,30 @@
         <resources>
             <resource>
                 <directory>${project.basedir}</directory>
-                <includes>
-                    <include>LICENSE</include>
-                </includes>
+                <includes><include>LICENSE</include></includes>
                 <filtering>false</filtering>
             </resource>
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>${maven.enforcer.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>enforce-build-baseline</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>[3.9.0,4.0.0)</version>
-                                </requireMavenVersion>
-                                <requireJavaVersion>
-                                    <version>[21,)</version>
-                                </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>${maven.enforcer.plugin.version}</version>
+                <executions><execution><id>enforce-build-baseline</id><goals><goal>enforce</goal></goals><configuration><rules><requireMavenVersion><version>[3.9.0,4.0.0)</version></requireMavenVersion><requireJavaVersion><version>[21,)</version></requireJavaVersion></rules></configuration></execution></executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${maven.compiler.plugin.version}</version>
+                <configuration><release>${maven.compiler.release}</release><parameters>true</parameters></configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.github.supracraft.bridge</groupId><artifactId>bridge-plugin</artifactId><version>${bridge.version}</version>
+                <executions><execution><goals><goal>bridge</goal></goals></execution></executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-assembly-plugin</artifactId><version>${maven.assembly.plugin.version}</version>
                 <configuration>
-                    <release>${maven.compiler.release}</release>
-                    <parameters>true</parameters>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>net.ME1312.ASM</groupId>
-                <artifactId>bridge-plugin</artifactId>
-                <version>${bridge.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>bridge</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven.assembly.plugin.version}</version>
-                <configuration>
-                    <finalName>VanillaCord</finalName>
+                    <finalName>supracraft-vanillacord-${project.version}</finalName>
                     <outputDirectory>artifacts</outputDirectory>
                     <archive>
-                        <manifest>
-                            <mainClass>vanillacord.Downloader</mainClass>
-                        </manifest>
+                        <manifest><mainClass>vanillacord.Downloader</mainClass></manifest>
                         <manifestEntries>
                             <Implementation-Title>VanillaCord</Implementation-Title>
                             <Implementation-Version>${project.version}</Implementation-Version>
@@ -200,50 +120,24 @@
                             <Build-Commit>${build.commit}</Build-Commit>
                             <Build-Ref>${build.ref}</Build-Ref>
                             <Build-Number>${build.number}</Build-Number>
+                            <Source-Repository>${source.repository}</Source-Repository>
+                            <Upstream-Repository>${upstream.repository}</Upstream-Repository>
                             <Bridge-Version>${bridge.version}</Bridge-Version>
+                            <Bridge-Coordinate>io.github.supracraft.bridge:bridge:${bridge.version}</Bridge-Coordinate>
                         </manifestEntries>
                     </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
+                    <descriptorRefs><descriptorRef>jar-with-dependencies</descriptorRef></descriptorRefs>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <executions><execution><id>make-assembly</id><phase>package</phase><goals><goal>single</goal></goals></execution></executions>
             </plugin>
             <plugin>
-                <groupId>org.cyclonedx</groupId>
-                <artifactId>cyclonedx-maven-plugin</artifactId>
-                <version>${cyclonedx.maven.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>make-sbom</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>makeBom</goal>
-                        </goals>
-                        <configuration>
-                            <outputFormat>json</outputFormat>
-                            <outputName>vanillacord-sbom</outputName>
-                            <includeBomSerialNumber>true</includeBomSerialNumber>
-                        </configuration>
-                    </execution>
-                </executions>
+                <groupId>org.cyclonedx</groupId><artifactId>cyclonedx-maven-plugin</artifactId><version>${cyclonedx.maven.plugin.version}</version>
+                <executions><execution><id>make-sbom</id><phase>verify</phase><goals><goal>makeBom</goal></goals><configuration><outputFormat>json</outputFormat><outputName>vanillacord-sbom</outputName><includeBomSerialNumber>true</includeBomSerialNumber></configuration></execution></executions>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire.plugin.version}</version>
-                <configuration>
-                    <useModulePath>false</useModulePath>
-                </configuration>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire.plugin.version}</version>
+                <configuration><useModulePath>false</useModulePath></configuration>
             </plugin>
         </plugins>
     </build>

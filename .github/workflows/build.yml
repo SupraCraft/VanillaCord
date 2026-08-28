@@ -10,6 +10,7 @@ on:
       - 'pom.xml'
       - 'scripts/**'
       - '.github/workflows/build.yml'
+      - 'VERSIONING.md'
   pull_request:
     branches: [master, main]
     paths:
@@ -20,6 +21,7 @@ on:
       - 'scripts/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/compatibility.yml'
+      - 'VERSIONING.md'
   release:
     types: [published]
   workflow_dispatch:
@@ -27,6 +29,9 @@ on:
       tag:
         description: "Tag to build and upload"
         required: true
+      bridge_version:
+        description: "Exact Bridge version; leave empty to resolve current compatible snapshot"
+        required: false
 
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
@@ -34,12 +39,12 @@ concurrency:
 
 env:
   BRIDGE_OWNER: ${{ github.repository_owner }}
-  BRIDGE_VERSION: ${{ vars.BRIDGE_VERSION || '' }}
+  BRIDGE_VERSION: ${{ inputs.bridge_version || vars.BRIDGE_VERSION || '' }}
   BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
   BRIDGE_PACKAGES_TOKEN: ${{ secrets.BRIDGE_PACKAGES_TOKEN || github.token }}
 
 permissions:
-  contents: write
+  contents: read
   packages: read
 
 jobs:
@@ -79,7 +84,7 @@ jobs:
       - name: Set project version
         run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
-      - name: Resolve Bridge version from GitHub Packages
+      - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
         env:
           BRIDGE_OWNER: ${{ env.BRIDGE_OWNER }}
@@ -90,24 +95,46 @@ jobs:
           echo "Using Bridge ${VERSION}"
           echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-      - name: Build
+      - name: Record build inputs
         run: |
-          if [[ -n "${BRIDGE_VERSION:-}" ]]; then
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
-          else
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER}
-          fi
+          cat > BUILD-METADATA.properties <<EOF
+          vanillacord.version=${{ steps.version.outputs.VALUE }}
+          bridge.version=${BRIDGE_VERSION}
+          git.commit=${GITHUB_SHA}
+          git.ref=${GITHUB_REF}
+          github.run=${GITHUB_RUN_NUMBER}
+          EOF
 
-      - name: Upload jar
+      - name: Build, test, and generate SBOM
+        run: >-
+          mvn -B verify
+          -Dbridge.owner=${BRIDGE_OWNER}
+          -Dbridge.version=${BRIDGE_VERSION}
+          -Dbuild.commit=${GITHUB_SHA}
+          -Dbuild.ref=${GITHUB_REF}
+          -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Generate checksums
+        run: |
+          sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+
+      - name: Upload build evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: VanillaCord
-          path: artifacts/VanillaCord.jar
+          name: VanillaCord-${{ steps.version.outputs.VALUE }}
+          path: |
+            artifacts/VanillaCord.jar
+            build/vanillacord-sbom.json
+            BUILD-METADATA.properties
+            SHA256SUMS
           if-no-files-found: error
 
   release:
     if: github.event_name != 'push' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
     steps:
       - name: Determine tag
         id: vars
@@ -155,7 +182,7 @@ jobs:
       - name: Set project version
         run: mvn -B -q org.codehaus.mojo:versions-maven-plugin:2.16.2:set -DnewVersion=${{ steps.version.outputs.VALUE }} -DgenerateBackupPoms=false
 
-      - name: Resolve Bridge version from GitHub Packages
+      - name: Resolve exact Bridge version
         if: env.BRIDGE_VERSION == ''
         env:
           BRIDGE_OWNER: ${{ env.BRIDGE_OWNER }}
@@ -166,17 +193,35 @@ jobs:
           echo "Using Bridge ${VERSION}"
           echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
-      - name: Build
+      - name: Record release inputs
         run: |
-          if [[ -n "${BRIDGE_VERSION:-}" ]]; then
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
-          else
-            mvn -B verify -Dbridge.owner=${BRIDGE_OWNER}
-          fi
+          cat > BUILD-METADATA.properties <<EOF
+          vanillacord.version=${{ steps.version.outputs.VALUE }}
+          bridge.version=${BRIDGE_VERSION}
+          git.commit=${GITHUB_SHA}
+          git.ref=${GITHUB_REF}
+          github.run=${GITHUB_RUN_NUMBER}
+          EOF
 
-      - name: Publish release asset
+      - name: Build, test, and generate SBOM
+        run: >-
+          mvn -B verify
+          -Dbridge.owner=${BRIDGE_OWNER}
+          -Dbridge.version=${BRIDGE_VERSION}
+          -Dbuild.commit=${GITHUB_SHA}
+          -Dbuild.ref=${GITHUB_REF}
+          -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Generate checksums
+        run: sha256sum artifacts/VanillaCord.jar build/vanillacord-sbom.json > SHA256SUMS
+
+      - name: Publish release assets
         uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d
         with:
           tag_name: ${{ steps.vars.outputs.TAG }}
-          files: artifacts/VanillaCord.jar
+          files: |
+            artifacts/VanillaCord.jar
+            build/vanillacord-sbom.json
+            BUILD-METADATA.properties
+            SHA256SUMS
           fail_on_unmatched_files: true

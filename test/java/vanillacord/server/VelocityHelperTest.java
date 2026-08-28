@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.lang.reflect.Method;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,10 +22,10 @@ class VelocityHelperTest {
 
     @Test
     void parsesValidForwardingPayload() throws Exception {
-        VelocityHelper helper = helperWith(SECRET);
+        VelocityForwardingParser parser = parserWith(SECRET);
         ByteBuf packet = forwardingPacket(SECRET, "203.0.113.42", PLAYER_ID, "TestPlayer");
         try {
-            VelocityHelper.ForwardedPlayerData parsed = helper.parseForwardingData(packet);
+            VelocityForwardingParser.ForwardedPlayerData parsed = parser.parse(packet);
 
             assertEquals("203.0.113.42", parsed.address());
             assertEquals(PLAYER_ID, parsed.playerId());
@@ -45,10 +44,10 @@ class VelocityHelperTest {
 
     @Test
     void rejectsPayloadSignedWithWrongSecret() throws Exception {
-        VelocityHelper helper = helperWith(SECRET);
+        VelocityForwardingParser parser = parserWith(SECRET);
         ByteBuf packet = forwardingPacket("wrong-secret", "203.0.113.42", PLAYER_ID, "TestPlayer");
         try {
-            QuietException error = assertThrows(QuietException.class, () -> helper.parseForwardingData(packet));
+            QuietException error = assertThrows(QuietException.class, () -> parser.parse(packet));
             assertEquals("Received invalid IP forwarding data. Did you use the right forwarding secret?", error.getMessage());
         } finally {
             packet.release();
@@ -57,10 +56,10 @@ class VelocityHelperTest {
 
     @Test
     void acceptsAnyConfiguredRotationSecret() throws Exception {
-        VelocityHelper helper = new VelocityHelper(new LinkedList<>(List.of("old-secret", "new-secret")));
+        VelocityForwardingParser parser = new VelocityForwardingParser(List.of("old-secret", "new-secret"));
         ByteBuf packet = forwardingPacket("new-secret", "198.51.100.17", PLAYER_ID, "RotatingPlayer");
         try {
-            VelocityHelper.ForwardedPlayerData parsed = helper.parseForwardingData(packet);
+            VelocityForwardingParser.ForwardedPlayerData parsed = parser.parse(packet);
             assertEquals("198.51.100.17", parsed.address());
             assertEquals("RotatingPlayer", parsed.playerName());
         } finally {
@@ -68,8 +67,8 @@ class VelocityHelperTest {
         }
     }
 
-    private static VelocityHelper helperWith(String secret) {
-        return new VelocityHelper(new LinkedList<>(List.of(secret)));
+    private static VelocityForwardingParser parserWith(String secret) {
+        return new VelocityForwardingParser(List.of(secret));
     }
 
     private static ByteBuf forwardingPacket(String secret, String address, UUID id, String name) throws Exception {

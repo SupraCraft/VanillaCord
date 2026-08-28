@@ -8,30 +8,33 @@ build_commit="${4:?build commit is required}"
 build_ref="${5:?build ref is required}"
 build_number="${6:?build number is required}"
 
+expected="artifacts/supracraft-vanillacord-${version}.jar"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-build_once() {
+capture() {
   local label="$1"
-  local expected="artifacts/supracraft-vanillacord-${version}.jar"
-
-  rm -rf build artifacts
-  ./mvnw -B clean verify \
-    -Dbridge.owner="${bridge_owner}" \
-    -Dbridge.version="${bridge_version}" \
-    -Dbuild.commit="${build_commit}" \
-    -Dbuild.ref="${build_ref}" \
-    -Dbuild.number="${build_number}"
-
-  test -s "$expected"
-  cp "$expected" "$tmpdir/${label}.jar"
-  unzip -l "$expected" > "$tmpdir/${label}.entries.txt"
-  zipinfo -l "$expected" > "$tmpdir/${label}.zipinfo.txt"
-  sha256sum "$expected" | tee "$tmpdir/${label}.sha256"
+  local jar_path="$2"
+  test -s "$jar_path"
+  cp "$jar_path" "$tmpdir/${label}.jar"
+  unzip -l "$jar_path" > "$tmpdir/${label}.entries.txt"
+  zipinfo -l "$jar_path" > "$tmpdir/${label}.zipinfo.txt"
+  sha256sum "$jar_path" | tee "$tmpdir/${label}.sha256"
 }
 
-build_once first
-build_once second
+# The normal validated CI build is sample one. Reuse it instead of doing two
+# additional builds so the proof costs one clean rebuild, not two.
+capture first "$expected"
+
+rm -rf build artifacts
+./mvnw -B clean verify \
+  -Dbridge.owner="${bridge_owner}" \
+  -Dbridge.version="${bridge_version}" \
+  -Dbuild.commit="${build_commit}" \
+  -Dbuild.ref="${build_ref}" \
+  -Dbuild.number="${build_number}"
+
+capture second "$expected"
 
 first_hash="$(cut -d' ' -f1 "$tmpdir/first.sha256")"
 second_hash="$(cut -d' ' -f1 "$tmpdir/second.sha256")"
@@ -53,6 +56,4 @@ printf 'reproducible.sha256=%s\n' "$first_hash" > REPRODUCIBILITY.properties
 printf 'reproducible.version=%s\n' "$version" >> REPRODUCIBILITY.properties
 printf 'reproducible.bridge.version=%s\n' "$bridge_version" >> REPRODUCIBILITY.properties
 
-# The second clean build remains in artifacts/ so downstream contract/checksum
-# steps operate on an artifact already proven byte-identical to the first build.
 echo "Reproducible canonical JAR: $first_hash"

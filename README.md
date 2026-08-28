@@ -2,12 +2,13 @@
 [![Build Status](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml/badge.svg)](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml)
 [![Release Version](https://img.shields.io/github/release/SupraCraft/VanillaCord/all.svg)](https://github.com/SupraCraft/VanillaCord/releases)<br>
 
-VanillaCord downloads and patches a vanilla Minecraft server, so proxies can connect to it with your choice of
+VanillaCord downloads and patches a vanilla Minecraft server so proxies can connect to it with your choice of
 [BungeeCord](https://www.spigotmc.org/wiki/bungeecord-ip-forwarding/),
 [BungeeGuard](https://www.spigotmc.org/resources/bungeeguard.79601/), or
 [Velocity](https://docs.papermc.io/velocity/security#velocity-modern-forwarding) IP forwarding enabled.
-```
-java -jar VanillaCord.jar <versions...>
+
+```sh
+java -jar supracraft-vanillacord-<version>.jar <minecraft-versions...>
 ```
 
 ## What VanillaCord does
@@ -20,6 +21,32 @@ Use VanillaCord when the backend server is vanilla. Do not install VanillaCord o
 PaperMC. Paper has native Velocity forwarding support and should be configured
 through Paper's own `config/paper-global.yml`.
 
+## Fork and artifact identity
+This repository is the SupraCraft-maintained fork of ME1312/VanillaCord. Original
+upstream authorship and license history remain intact, but artifacts built and
+published here identify SupraCraft as their producer.
+
+Canonical Maven identity:
+
+```text
+io.github.supracraft.vanillacord:vanillacord:<version>
+```
+
+Canonical standalone filename:
+
+```text
+supracraft-vanillacord-<version>.jar
+```
+
+`VanillaCord.jar` is emitted temporarily as a byte-identical compatibility alias
+for existing deployment automation. New consumers should use the canonical
+versioned filename or Maven coordinate. The Java packages remain `vanillacord.*`
+because they are already neutral and keeping them stable reduces compatibility
+churn and keeps source changes practical to contribute upstream.
+
+See `ARTIFACT_IDENTITY.md` and `VERSIONING.md` for the machine-consumption and
+version policy.
+
 ## Downloads
 *For Minecraft* 1.7, 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.21, snapshots, and pre-releases
 
@@ -27,10 +54,14 @@ through Paper's own `config/paper-global.yml`.
 <pre>https://github.com/SupraCraft/VanillaCord/releases</pre>
 </a>
 
-> Fork note: original work by the ME1312 team. This SupraCraft fork maintains current Minecraft compatibility, deterministic compatibility checks, Velocity forwarding support, and the build/release supply chain.
-
 ## Patching a vanilla server
-Download `VanillaCord.jar`, then run it with one or more Minecraft versions:
+Download the canonical release JAR, then run it with one or more Minecraft versions:
+
+```sh
+java -jar supracraft-vanillacord-2.9.0.jar 26.2
+```
+
+The temporary compatibility alias remains equivalent while downstream automation migrates:
 
 ```sh
 java -jar VanillaCord.jar 26.2
@@ -125,8 +156,11 @@ CapRover `FORWARDING_SECRET` value must match exactly. If they do not, Velocity
 login will fail with an invalid forwarding data or forwarding secret error.
 
 ## CapRover workspace behavior
-In this workspace, the vanilla server image downloads the latest VanillaCord
-release and patches the selected vanilla server version at runtime. Set:
+In this workspace, the vanilla server image downloads a VanillaCord release and
+patches the selected vanilla server version at runtime. Existing images that
+expect `VanillaCord.jar` remain supported by the temporary compatibility alias;
+new deployment code should locate the canonical `supracraft-vanillacord-*.jar`
+release asset.
 
 ```text
 MINECRAFT_SERVER_VERSION=26.2
@@ -139,26 +173,30 @@ use the same `FORWARDING_SECRET` as Velocity.
 
 ## Building
 - The repository pins Apache Maven `3.9.16` with Apache Maven Wrapper `3.3.4`. Use `./mvnw` on Unix-like systems or `mvnw.cmd` on Windows; do not depend on a system Maven version.
-- Use JDK 25 for current Minecraft compatibility checks. The Maven build still emits Java 21 bytecode (`maven.compiler.release=21`) so the helper jar is not made Java 25-only unless that becomes necessary.
-- Bridge artifacts are pulled from GitHub Packages at `https://maven.pkg.github.com/<owner>/Bridge`.
-- Bridge is still required by the current patcher and build. See `docs/bridge-dependency.md` for the dependency and fork strategy.
-- `BRIDGE_OWNER` controls which GitHub owner to pull from (defaults to the repository owner in CI, or `mark-e-deyoung` locally).
-- `BRIDGE_VERSION` pins a specific Bridge build. GitHub builds publish run-numbered versions (e.g., `0.1.0-SNAPSHOT.123`); leave `BRIDGE_VERSION` unset/`LATEST` to auto-resolve the latest published version from GitHub Packages or pin it explicitly for reproducible builds.
-- Example: `BRIDGE_OWNER=ME1312 BRIDGE_VERSION=$(./scripts/resolve-bridge-version.sh) ./mvnw -B verify`
-- Compatibility probe: `scripts/Invoke-CompatibilityProbe.ps1 -UseDocker` builds the jar and tests it against the current Mojang release, the optional snapshot/RC, required supported releases, and best-effort legacy releases.
+- Use JDK 25 for current Minecraft compatibility checks. The Maven build emits Java 21 bytecode (`maven.compiler.release=21`).
+- Canonical Bridge dependencies come from `io.github.supracraft.bridge` in the `SupraCraft/Bridge` GitHub Packages repository.
+- The source POM pins a known exact Bridge baseline. Normal integration CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build and always records the exact coordinate consumed.
+- `BRIDGE_OWNER` defaults to `SupraCraft`; `BRIDGE_VERSION` pins an exact canonical Bridge build.
+- Example: `BRIDGE_OWNER=SupraCraft BRIDGE_VERSION=0.1.0-dev.34 ./mvnw -B verify`
+- To exercise the newest canonical Bridge development build: `BRIDGE_VERSION=$(./scripts/resolve-bridge-version.sh) ./mvnw -B verify`
+- Compatibility probe: `scripts/Invoke-CompatibilityProbe.ps1 -UseDocker` tests current Mojang release, optional snapshot/RC, required supported releases, and best-effort legacy releases.
+
+Development versions are immutable `X.Y.Z-dev.<run>` coordinates, release candidates
+are `X.Y.Z-rc.N`, and stable releases are `X.Y.Z`. The project does not use Maven
+`SNAPSHOT` semantics for CI artifacts.
 
 ## GitHub Packages auth (local)
-- You need a PAT with `read:packages` for the owner hosting Bridge (and `write:packages` if you publish a new Bridge build).
+- You need a PAT with `read:packages` for the owner hosting Bridge (and `write:packages` if publishing Bridge).
 - Keep auth in-repo to avoid host config issues: `export GH_CONFIG_DIR=$PWD/.gh && printf "%s\n" "$PAT" | gh auth login --with-token`
-- When building locally, set `GITHUB_TOKEN=$PAT` so Maven (and `scripts/resolve-bridge-version.sh`) can read from `https://maven.pkg.github.com/${BRIDGE_OWNER}/Bridge`.
+- Set `GITHUB_TOKEN=$PAT` so Maven and `scripts/resolve-bridge-version.sh` can read from `https://maven.pkg.github.com/${BRIDGE_OWNER}/Bridge`.
 
 ## GitHub Packages auth (CI)
-- The workflow uses `BRIDGE_PACKAGES_TOKEN` (PAT with `read:packages` and `repo` if Bridge is private) and `BRIDGE_PACKAGES_USERNAME` if provided; otherwise it falls back to the default `GITHUB_TOKEN`/actor. Add the secret in repo settings if builds need to read Bridge from another private repo.
+The workflow uses `BRIDGE_PACKAGES_TOKEN` and `BRIDGE_PACKAGES_USERNAME` when
+provided; otherwise it falls back to the repository `GITHUB_TOKEN` and actor.
 
 ## Current fork status
-- Latest published release: [`v2.8`](https://github.com/SupraCraft/VanillaCord/releases/tag/v2.8).
-- Current compatibility sentinel validates the current stable Minecraft release with patch, JAR-integrity, and boot checks; current stable at this documentation update is `26.2`.
-- The maintained compatibility report includes the supported historical regression set and best-effort legacy releases.
+- Latest historical stable release: [`v2.8`](https://github.com/SupraCraft/VanillaCord/releases/tag/v2.8).
+- Next normalized SupraCraft release line: `2.9.0`; development builds use `2.9.0-dev.<run>`.
+- Current compatibility sentinel validates the current stable Minecraft release with patch, JAR-integrity, and boot checks.
 - [Compatibility report](docs/minecraft-compatibility-report.md).
-- Recent releases include the Minecraft 26.2 authlib/GameProfile compatibility fixes required for modern forwarding.
-- The CapRover vanilla image downloads the latest release asset from this fork.
+- Recent work includes Minecraft 26.2 authlib/GameProfile compatibility fixes and deterministic Velocity-forwarding validation.

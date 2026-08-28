@@ -11,7 +11,9 @@ import java.nio.file.Path;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SourceScannerTest {
 
@@ -41,9 +43,48 @@ class SourceScannerTest {
         assertNotNull(file.sources.receive, "receive not detected");
     }
 
+    @Test
+    void acknowledgementDiagnosticIsNotLoginHello() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = newProbeClass();
+        addStringLdcMethod(cw, "ack", "Unexpected login acknowledgement packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertNull(file.sources.login, "acknowledgement diagnostic must not select the login hello hook");
+    }
+
+    @Test
+    void strongHelloSignalReplacesWeakFallback() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = newProbeClass();
+        addStringLdcMethod(cw, "weak", "Unexpected login packet");
+        addStringLdcMethod(cw, "strong", "Unexpected hello packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertNotNull(file.sources.login);
+        assertEquals("strong", file.sources.login.name);
+    }
+
+    @Test
+    void weakFallbackCannotOverwriteStrongHelloSignal() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = newProbeClass();
+        addStringLdcMethod(cw, "strong", "Received hello twice");
+        addStringLdcMethod(cw, "weak", "Unexpected login packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertNotNull(file.sources.login);
+        assertEquals("strong", file.sources.login.name);
+    }
+
     private static byte[] buildProbeClass() {
-        ClassWriter cw = new ClassWriter(0);
-        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, "vanillacord/test/Probe", null, "java/lang/Object", null);
+        ClassWriter cw = newProbeClass();
 
         // Non-static int field enables the login extension detection path.
         cw.visitField(Opcodes.ACC_PUBLIC, "tid", "I", null, null).visitEnd();
@@ -56,6 +97,16 @@ class SourceScannerTest {
 
         cw.visitEnd();
         return cw.toByteArray();
+    }
+
+    private static ClassWriter newProbeClass() {
+        ClassWriter cw = new ClassWriter(0);
+        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, "vanillacord/test/Probe", null, "java/lang/Object", null);
+        return cw;
+    }
+
+    private static void scan(StubPackage file, byte[] bytes) {
+        new ClassReader(bytes).accept(new SourceScanner(file), ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG);
     }
 
     private static void addStringLdcMethod(ClassWriter cw, String name, String literal) {

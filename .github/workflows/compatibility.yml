@@ -7,6 +7,10 @@ on:
         description: "Include latest Mojang snapshot/RC"
         required: false
         default: "true"
+      boot_stable:
+        description: "Boot-smoke the latest stable patched server"
+        required: false
+        default: "true"
       required_supported:
         description: "Space-separated required supported Minecraft versions"
         required: false
@@ -29,6 +33,7 @@ env:
   BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
   BRIDGE_PACKAGES_TOKEN: ${{ secrets.BRIDGE_PACKAGES_TOKEN || github.token }}
   VANILLACORD_INCLUDE_SNAPSHOT: ${{ inputs.include_snapshot || 'true' }}
+  VANILLACORD_BOOT_SMOKE: ${{ inputs.boot_stable || 'true' }}
   VANILLACORD_REQUIRED_SUPPORTED: ${{ inputs.required_supported || '1.21.11 1.20.6 1.20.4 1.19.4 1.18.2' }}
   VANILLACORD_BEST_EFFORT_LEGACY: ${{ inputs.best_effort_legacy || '1.17.1 1.16.5 1.12.2 1.8.9 1.7.10' }}
   VANILLACORD_COMPAT_REPORT: docs/minecraft-compatibility-report.md
@@ -62,6 +67,7 @@ jobs:
           # sentinel focused on current stable + current snapshot/RC. The full
           # maintained/legacy matrices remain available through workflow_dispatch.
           echo "VANILLACORD_INCLUDE_SNAPSHOT=true" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
           echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
           echo "VANILLACORD_BEST_EFFORT_LEGACY=none" >> "$GITHUB_ENV"
 

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">VanillaCord connection illustration</title>
+  <desc id="desc">A plain blocky vanilla server on the left is connected by a cream cable to a proxy node on the right.</desc>
+  <rect width="1200" height="640" rx="32" fill="#F7F2E7"/>
+  <path d="M0 510h1200v130H0z" fill="#D8D0BE"/>
+  <path d="M0 510h1200v24H0z" fill="#6F8C45"/>
+
+  <g transform="translate(110 160)" stroke="#514A42" stroke-width="10" stroke-linejoin="round">
+    <rect width="250" height="300" rx="22" fill="#D9BE8B"/>
+    <path d="M0 0h250v72H0z" fill="#F1E2BF"/>
+    <rect x="48" y="118" width="154" height="108" rx="10" fill="#8B704F"/>
+    <rect x="91" y="149" width="68" height="52" rx="6" fill="#F4C765"/>
+    <path d="M54 264h142" stroke="#B86B3F" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <g transform="translate(840 145)" stroke="#3D4345" stroke-width="10" stroke-linejoin="round">
+    <rect width="250" height="325" rx="22" fill="#626B6E"/>
+    <rect x="42" y="58" width="166" height="24" rx="10" fill="#3DA2B8" stroke="none"/>
+    <rect x="42" y="111" width="118" height="24" rx="10" fill="#8FA75D" stroke="none"/>
+    <rect x="42" y="164" width="166" height="24" rx="10" fill="#3DA2B8" stroke="none"/>
+    <circle cx="194" cy="253" r="14" fill="#F4C765" stroke="none"/>
+  </g>
+
+  <path d="M356 370 C505 255 675 480 846 360" fill="none" stroke="#514A42" stroke-width="66" stroke-linecap="round"/>
+  <path d="M356 370 C505 255 675 480 846 360" fill="none" stroke="#F1E2BF" stroke-width="46" stroke-linecap="round"/>
+  <path d="M365 368 C510 264 674 466 837 360" fill="none" stroke="#D9BE8B" stroke-width="6" stroke-dasharray="14 16" stroke-linecap="round"/>
+
+  <g fill="#B86B3F" stroke="#514A42" stroke-width="8">
+    <rect x="330" y="331" width="55" height="82" rx="9"/>
+    <rect x="815" y="320" width="55" height="82" rx="9"/>
+  </g>
+
+  <g font-family="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fill="#514A42">
+    <text x="235" y="500" text-anchor="middle" font-size="28" font-weight="700">vanilla server</text>
+    <text x="965" y="500" text-anchor="middle" font-size="28" font-weight="700">proxy network</text>
+    <text x="600" y="155" text-anchor="middle" font-size="24" font-weight="650" fill="#8A684B">forwarded identity</text>
+  </g>
+</svg>

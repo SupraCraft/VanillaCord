@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
@@ -27,7 +27,19 @@
     "repository": "SupraCraft/Bridge",
     "group": "io.github.supracraft.bridge",
     "versioning": "independent",
-    "release_input_policy": "exact immutable coordinate"
+    "release_input_policy": "exact immutable coordinate",
+    "user_facing_brand_role": "implementation-detail"
+  },
+  "branding": {
+    "organization": "SupraCraft",
+    "organization_contract_version": "0.1.0-candidate",
+    "family": "minecraft-server",
+    "status": "candidate",
+    "manifest": "docs/assets/brand/brand.json",
+    "web_icon": "docs/assets/brand/icon.svg",
+    "hero": "docs/assets/brand/hero.svg",
+    "jar_icon_svg": "META-INF/supracraft/vanillacord/icon.svg",
+    "jar_icon_png": "META-INF/supracraft/vanillacord/icon-128.png"
   },
   "validation": {
     "build": "./mvnw -B verify",
@@ -35,6 +47,7 @@
     "reproducibility": "scripts/verify-reproducible-build.sh",
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
     "documentation_contract": "scripts/check-documentation-contract.sh",
+    "public_site_builder": "scripts/build-public-site.py",
     "compatibility_tiers": {
       "current-stable": "blocking",
       "required-supported": "blocking-when-requested",
@@ -61,7 +74,10 @@
     "github_metadata": "GITHUB_METADATA.json",
     "metadata_apply": "scripts/apply-github-metadata.py",
     "pages_entrypoint": "docs/index.html",
+    "pages_builder": "scripts/build-public-site.py",
+    "pages_workflow": ".github/workflows/pages.yml",
     "pages_url": "https://supracraft.github.io/VanillaCord/",
+    "machine_endpoints": ["project.json", "github.json", "brand.json", "artifacts.json", "compatibility.json", "llms.txt"],
     "upstream_attribution_required": true
   },
   "provenance": {
@@ -81,6 +97,7 @@
     "compatibility_operations": "docs/compatibility.md",
     "diagnostics": "docs/diagnostics.md",
     "artifact_retention": "docs/artifact-retention.md",
+    "brand_guidelines": "docs/brand-guidelines.md",
     "github_metadata": "GITHUB_METADATA.json",
     "pages_entrypoint": "docs/index.html",
     "modernization_ledger": "docs/build-modernization-status.md",

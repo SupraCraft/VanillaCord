@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "repository": "SupraCraft/VanillaCord",
   "description": "SupraCraft-maintained VanillaCord fork: patches vanilla Minecraft servers for BungeeCord, BungeeGuard, and Velocity forwarding.",
   "homepage": "https://supracraft.github.io/VanillaCord/",
@@ -19,9 +19,17 @@
   "pages": {
     "expected_enabled": true,
     "url": "https://supracraft.github.io/VanillaCord/",
-    "source": "branch",
-    "branch": "master",
-    "content_root": "docs/"
+    "source": "github-actions",
+    "builder": "scripts/build-public-site.py",
+    "workflow": ".github/workflows/pages.yml"
+  },
+  "brand": {
+    "organization": "SupraCraft",
+    "organization_contract": "0.1.0-candidate",
+    "manifest": "docs/assets/brand/brand.json",
+    "icon": "docs/assets/brand/icon.svg",
+    "hero": "docs/assets/brand/hero.svg",
+    "guidelines": "docs/brand-guidelines.md"
   },
   "upstream_repository": "ME1312/VanillaCord"
 }

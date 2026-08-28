@@ -1,0 +1,13 @@
+{
+  "name": "VanillaCord",
+  "short_name": "VanillaCord",
+  "description": "Connect vanilla Minecraft servers to proxies with forwarded player identity.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F7F2E7",
+  "theme_color": "#514A42",
+  "icons": [
+    {"src": "assets/brand/icon-32.png", "sizes": "32x32", "type": "image/png"},
+    {"src": "assets/brand/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}

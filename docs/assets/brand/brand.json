@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.1.0",
+  "project": "VanillaCord",
+  "organization": "SupraCraft",
+  "organization_brand_contract": "0.1.0-candidate",
+  "family": "minecraft-server",
+  "status": "candidate",
+  "identity": "vanilla Minecraft server proxy forwarding",
+  "metaphor": "a warm vanilla-cream cord connecting a plain server endpoint to a proxy/network endpoint",
+  "assets": {
+    "icon": "assets/brand/icon.svg",
+    "hero": "assets/brand/hero.svg",
+    "jar_icon_svg": "META-INF/supracraft/vanillacord/icon.svg",
+    "jar_icon_png": "META-INF/supracraft/vanillacord/icon-128.png"
+  },
+  "palette": {
+    "vanilla": "#F1E2BF",
+    "toasted_vanilla": "#D9BE8B",
+    "copper": "#B86B3F",
+    "grass": "#6F8C45",
+    "stone": "#747A76",
+    "signal_cyan": "#3DA2B8",
+    "cocoa": "#514A42",
+    "paper": "#F7F2E7"
+  },
+  "rules": [
+    "Make the cord the primary project metaphor.",
+    "Anchor the cord visibly between endpoints; avoid free-standing looped cable silhouettes.",
+    "Do not include Bridge implementation-detail imagery in the user-facing mark.",
+    "Use Minecraft-adjacent block geometry without copying Minecraft textures, fonts, mobs, logos, or UI.",
+    "Keep claims factual, brief, and traceable to repository contracts.",
+    "Prefer flat geometric artwork over highly rendered fantasy imagery."
+  ]
+}

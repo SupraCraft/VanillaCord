@@ -1,0 +1,6 @@
+{
+  "schema": "vanillacord-bridge-consumer-qualification/1",
+  "bridge_repository": "SupraCraft/Bridge",
+  "bridge_version": "0.1.0",
+  "purpose": "bridge-release-consumer-gate"
+}

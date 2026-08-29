@@ -98,6 +98,7 @@ def boot_smoke(java: pathlib.Path, server_jar: pathlib.Path, timeout_seconds: in
                 text=True,
             )
             ok, text = wait_for_boot(process, log_path, timeout_seconds)
+            returncode = process.poll()
             if ok and process.stdin:
                 try:
                     process.stdin.write("stop\n")
@@ -110,7 +111,25 @@ def boot_smoke(java: pathlib.Path, server_jar: pathlib.Path, timeout_seconds: in
                 process.kill()
                 process.wait(timeout=10)
         tail = "\n".join(text.splitlines()[-80:])
-        return ok, tail
+        return ok, tail, returncode
+
+
+def emit_failure_details(result):
+    """Make stable-gate failures diagnosable directly from the Actions log."""
+    print(
+        f"FAIL {result['version']} ({result['generation']}, Java {result['java']}): "
+        f"{result.get('error', 'unknown failure')}",
+        flush=True,
+    )
+    if "patch_returncode" in result:
+        print(f"patch return code: {result['patch_returncode']}", flush=True)
+    if "boot_returncode" in result:
+        print(f"boot return code: {result['boot_returncode']}", flush=True)
+    log_tail = str(result.get("log_tail", "")).strip()
+    if log_tail:
+        print("--- diagnostic tail ---", flush=True)
+        print(log_tail, flush=True)
+        print("--- end diagnostic tail ---", flush=True)
 
 
 def main():
@@ -171,6 +190,7 @@ def main():
             result["error"] = "missing from Mojang version manifest"
             failures += 1
             results.append(result)
+            emit_failure_details(result)
             continue
 
         output = out_dir / f"{version}.jar"
@@ -188,9 +208,11 @@ def main():
             result["jar"] = "not-run"
             result["boot"] = "not-run"
             result["error"] = "patch failed"
+            result["patch_returncode"] = patch.returncode
             result["log_tail"] = "\n".join(patch.stdout.splitlines()[-80:])
             failures += 1
             results.append(result)
+            emit_failure_details(result)
             continue
         result["patch"] = "pass"
 
@@ -200,17 +222,20 @@ def main():
             result["error"] = "patched output is missing, empty, or not a readable JAR"
             failures += 1
             results.append(result)
+            emit_failure_details(result)
             continue
         result["jar"] = "pass"
 
         java = require_java(java_feature)
-        ok, log_tail = boot_smoke(java, output, args.boot_timeout)
+        ok, log_tail, boot_returncode = boot_smoke(java, output, args.boot_timeout)
         if not ok:
             result["boot"] = "fail"
             result["error"] = f"server did not reach startup marker on Java {java_feature}"
+            result["boot_returncode"] = boot_returncode
             result["log_tail"] = log_tail
             failures += 1
             results.append(result)
+            emit_failure_details(result)
             continue
 
         result["boot"] = "pass"

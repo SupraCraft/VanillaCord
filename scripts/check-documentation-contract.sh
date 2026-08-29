@@ -23,6 +23,8 @@ required=(
   scripts/apply-github-metadata.py
   scripts/build-public-site.py
   scripts/check-public-site.py
+  scripts/configure-bridge-qualification.py
+  .github/workflows/compatibility.yml
   .github/workflows/pages.yml
 )
 for path in "${required[@]}"; do
@@ -45,6 +47,8 @@ metadata = json.loads(Path('GITHUB_METADATA.json').read_text(encoding='utf-8'))
 brand = json.loads(Path('docs/assets/brand/brand.json').read_text(encoding='utf-8'))
 page = Path('docs/index.html').read_text(encoding='utf-8')
 pages_workflow = Path('.github/workflows/pages.yml').read_text(encoding='utf-8')
+compatibility_workflow = Path('.github/workflows/compatibility.yml').read_text(encoding='utf-8')
+qualification_configurator = Path('scripts/configure-bridge-qualification.py').read_text(encoding='utf-8')
 
 assert contract['repository'] == 'SupraCraft/VanillaCord'
 assert contract['artifact']['maven'] == 'io.github.supracraft.vanillacord:vanillacord:<version>'
@@ -60,6 +64,14 @@ assert profile['identity']['cord_is_primary'] is True
 assert profile['identity']['bridge_visible_in_user_identity'] is False
 assert profile['packaged_resources']['source_path'] == 'resources/META-INF/supracraft/vanillacord/icon.svg'
 assert contract['bridge']['user_identity_visibility'] == 'implementation-detail-not-part-of-brand'
+assert contract['bridge']['release_input_policy'] == 'exact immutable coordinate'
+assert contract['bridge']['consumer_qualification_workflow'] == '.github/workflows/compatibility.yml'
+assert contract['bridge']['consumer_qualification_branch'] == 'qualification/bridge/<version>'
+assert contract['bridge']['consumer_qualification_manifest'] == 'BRIDGE_QUALIFICATION.json'
+assert contract['bridge']['consumer_qualification_configurator'] == 'scripts/configure-bridge-qualification.py'
+assert contract['bridge']['consumer_qualification_evidence'] == 'build/bridge-consumer-qualification/bridge-consumer-qualification.json'
+assert contract['validation']['bridge_consumer_qualification'] == '.github/workflows/compatibility.yml'
+assert contract['provenance']['records_bridge_consumer_qualification_evidence'] is True
 assert contract['validation']['public_site_builder'] == 'scripts/build-public-site.py'
 assert contract['validation']['public_site_check'] == 'scripts/check-public-site.py'
 assert contract['validation']['compatibility_tiers'] == {
@@ -97,6 +109,21 @@ assert 'scripts/check-public-site.py' in pages_workflow
 assert '--site-dir build/public-site' in pages_workflow
 assert '--base-url "${{ steps.deployment.outputs.page_url }}"' in pages_workflow
 
+for fragment in (
+    "branches: ['qualification/bridge/**']",
+    "BRIDGE_QUALIFICATION.json",
+    "scripts/configure-bridge-qualification.py",
+    "Bridge-Version: ${BRIDGE_VERSION}",
+    "Bridge-Coordinate: io.github.supracraft.bridge:bridge:${BRIDGE_VERSION}",
+    "build/bridge-consumer-qualification/bridge-consumer-qualification.json",
+    '"schema": "vanillacord-bridge-consumer-qualification/1"',
+    '"minecraftCompatibility": "pass"',
+):
+    assert fragment in compatibility_workflow, f'missing Bridge qualification workflow contract: {fragment}'
+assert 'vanillacord-bridge-consumer-qualification/1' in qualification_configurator
+assert 'refs/heads/qualification/bridge/{version}' in qualification_configurator
+assert 'bridge-release-consumer-gate' in qualification_configurator
+
 root = ET.parse('pom.xml').getroot()
 ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
 def text(path):
@@ -127,7 +154,9 @@ def workflow_retention(path, step_name):
 retention = contract['retention']
 assert workflow_retention('.github/workflows/build.yml', 'Upload reproducibility diagnostics on failure') == int(retention['actions_reproducibility_diagnostics_days'])
 assert workflow_retention('.github/workflows/build.yml', 'Upload build evidence') == int(retention['actions_build_evidence_days'])
-assert workflow_retention('.github/workflows/compatibility.yml', 'Upload compatibility report') == int(retention['actions_compatibility_report_days'])
+compat_retention = workflow_retention('.github/workflows/compatibility.yml', 'Upload compatibility evidence')
+assert compat_retention == int(retention['actions_compatibility_report_days'])
+assert compat_retention == int(retention['bridge_consumer_qualification_days'])
 assert retention['release_assets'] == 'durable-historical-provenance'
 assert retention['bridge_package_cleanup'] == 'owned-by-SupraCraft/Bridge-retention-policy'
 

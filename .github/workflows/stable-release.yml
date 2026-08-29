@@ -1,0 +1,320 @@
+name: stable-release
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - '.github/workflows/stable-release.yml'
+      - 'SUPPORTED_MINECRAFT.json'
+      - 'scripts/run-supported-matrix.py'
+      - 'scripts/validate-release-bridge-version.py'
+      - 'scripts/check-release-bridge-policy.sh'
+      - 'VERSIONING.md'
+  push:
+    branches: ['stable/**']
+    paths:
+      - 'RELEASE_REQUEST.json'
+      - 'pom.xml'
+      - 'java/**'
+      - 'test/**'
+      - 'resources/**'
+      - 'SUPPORTED_MINECRAFT.json'
+      - 'scripts/**'
+      - '.mvn/wrapper/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.github/workflows/stable-release.yml'
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: stable-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BRIDGE_OWNER: ${{ github.repository_owner }}
+  BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
+  BRIDGE_PACKAGES_TOKEN: ${{ secrets.BRIDGE_PACKAGES_TOKEN || github.token }}
+
+jobs:
+  policy:
+    name: Stable release policy validation
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+      - name: Verify Bridge release input policy
+        run: bash scripts/check-release-bridge-policy.sh
+      - name: Verify supported Minecraft matrix
+        run: |
+          python3 -m py_compile scripts/run-supported-matrix.py
+          python3 - <<'PY'
+          import json
+          data = json.load(open('SUPPORTED_MINECRAFT.json', encoding='utf-8'))
+          assert data['schema'] == 'vanillacord-supported-minecraft/1'
+          targets = data['targets']
+          versions = [item['version'] for item in targets]
+          assert len(versions) == len(set(versions))
+          assert sum(bool(item.get('current')) for item in targets) == 1
+          assert all(int(item['java']) in {8, 16, 17, 21, 25} for item in targets)
+          PY
+      - name: Verify documentation contract
+        run: bash scripts/check-documentation-contract.sh
+
+  release:
+    name: Build, fully qualify, and publish stable release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/stable/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout exact stable source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Validate stable release declaration
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          import xml.etree.ElementTree as ET
+          ref = os.environ['GITHUB_REF']
+          prefix = 'refs/heads/stable/'
+          if not ref.startswith(prefix):
+              raise SystemExit(f'Unexpected stable release ref: {ref}')
+          branch_version = ref[len(prefix):]
+          if not re.fullmatch(r'\d+\.\d+\.\d+', branch_version):
+              raise SystemExit(f'Invalid stable branch version: {branch_version}')
+          request = pathlib.Path('RELEASE_REQUEST.json')
+          if not request.is_file():
+              raise SystemExit('RELEASE_REQUEST.json is required')
+          data = json.loads(request.read_text(encoding='utf-8'))
+          if data.get('schema') != 'vanillacord-stable-release-request/1':
+              raise SystemExit('Unsupported release request schema')
+          version = str(data.get('version', ''))
+          tag = str(data.get('tag', ''))
+          bridge_version = str(data.get('bridge_version', ''))
+          source_master = str(data.get('source_master_commit', ''))
+          if version != branch_version:
+              raise SystemExit(f'Branch version {branch_version} != request version {version}')
+          if tag != f'v{version}':
+              raise SystemExit(f'Expected tag v{version}, found {tag}')
+          parent = subprocess.check_output(['git', 'rev-parse', 'HEAD^'], text=True).strip()
+          if source_master != parent:
+              raise SystemExit(f'Request source master {source_master} != stable commit parent {parent}')
+          changed = subprocess.check_output(['git', 'diff', '--name-only', 'HEAD^', 'HEAD'], text=True).splitlines()
+          allowed = {'pom.xml', 'RELEASE_REQUEST.json'}
+          if set(changed) != allowed:
+              raise SystemExit(f'Stable promotion must change exactly pom.xml and RELEASE_REQUEST.json; changed={changed}')
+          root = ET.parse('pom.xml').getroot()
+          ns = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          pom_version = root.find('m:version', ns).text.strip()
+          pom_bridge = root.find('m:properties/m:bridge.version', ns).text.strip()
+          if pom_version != version:
+              raise SystemExit(f'POM version {pom_version} != stable version {version}')
+          if pom_bridge != bridge_version:
+              raise SystemExit(f'POM Bridge version {pom_bridge} != request Bridge version {bridge_version}')
+          with pathlib.Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8') as fh:
+              fh.write(f'VERSION={version}\nTAG={tag}\nBRIDGE_VERSION={bridge_version}\nSOURCE_MASTER_COMMIT={source_master}\n')
+          PY
+
+      - name: Require unused stable tag
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Stable tag already exists: ${TAG}" >&2
+            exit 1
+          fi
+
+      - name: Set up JDK 21 for build and patcher
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          server-id: bridge-github
+          server-username: BRIDGE_PACKAGES_USERNAME
+          server-password: BRIDGE_PACKAGES_TOKEN
+
+      - name: Capture JDK 21
+        run: |
+          echo "VANILLACORD_JAVA_21_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+          echo "VANILLACORD_PATCHER_JAVA_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Verify pinned Maven
+        run: |
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
+      - name: Validate exact Bridge release input
+        run: python3 scripts/validate-release-bridge-version.py "$BRIDGE_VERSION"
+
+      - name: Record stable build inputs
+        run: |
+          cat > BUILD-METADATA.properties <<EOF
+          group=io.github.supracraft.vanillacord
+          artifact=vanillacord
+          version=${VERSION}
+          release.kind=stable
+          bridge.coordinate=io.github.supracraft.bridge:bridge:${BRIDGE_VERSION}
+          source.repository=SupraCraft/VanillaCord
+          upstream.repository=ME1312/VanillaCord
+          git.commit=${GITHUB_SHA}
+          git.ref=${GITHUB_REF}
+          source.master.commit=${SOURCE_MASTER_COMMIT}
+          github.run=${GITHUB_RUN_NUMBER}
+          maven.version=3.9.16
+          maven.wrapper.version=3.3.4
+          build.outputTimestamp=2000-01-01T00:00:00Z
+          EOF
+
+      - name: Build and test stable source
+        run: >-
+          ./mvnw -B verify
+          -Dbridge.owner=${BRIDGE_OWNER}
+          -Dbridge.version=${BRIDGE_VERSION}
+          -Dbuild.commit=${GITHUB_SHA}
+          -Dbuild.ref=${GITHUB_REF}
+          -Dbuild.number=${GITHUB_RUN_NUMBER}
+
+      - name: Prove reproducible stable JAR
+        run: >-
+          bash scripts/verify-reproducible-build.sh
+          "${VERSION}"
+          "${BRIDGE_OWNER}"
+          "${BRIDGE_VERSION}"
+          "${GITHUB_SHA}"
+          "${GITHUB_REF}"
+          "${GITHUB_RUN_NUMBER}"
+
+      - name: Verify stable artifact contract
+        run: >-
+          bash scripts/verify-artifact-contract.sh
+          "artifacts/supracraft-vanillacord-${VERSION}.jar"
+          "${VERSION}"
+          "${BRIDGE_VERSION}"
+          "${GITHUB_SHA}"
+          ARTIFACT-INVENTORY.txt
+
+      - name: Verify no legacy standalone alias
+        run: test ! -e artifacts/VanillaCord.jar
+
+      - name: Install JDK 8
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 8
+      - name: Capture JDK 8
+        run: echo "VANILLACORD_JAVA_8_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Install JDK 16
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 16
+      - name: Capture JDK 16
+        run: echo "VANILLACORD_JAVA_16_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Install JDK 17
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Capture JDK 17
+        run: echo "VANILLACORD_JAVA_17_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Install JDK 25
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 25
+      - name: Capture JDK 25
+        run: echo "VANILLACORD_JAVA_25_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Fully test supported Minecraft generations
+        run: >-
+          python3 scripts/run-supported-matrix.py
+          "artifacts/supracraft-vanillacord-${VERSION}.jar"
+          --report docs/minecraft-supported-releases.md
+          --json build/minecraft-supported-releases.json
+
+      - name: Record stable qualification evidence
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          version = os.environ['VERSION']
+          jar = pathlib.Path(f'artifacts/supracraft-vanillacord-{version}.jar')
+          request = json.loads(pathlib.Path('RELEASE_REQUEST.json').read_text(encoding='utf-8'))
+          support = json.loads(pathlib.Path('build/minecraft-supported-releases.json').read_text(encoding='utf-8'))
+          if support.get('status') != 'pass':
+              raise SystemExit('supported Minecraft matrix did not pass')
+          evidence = {
+              'schema': 'vanillacord-stable-release-qualification/1',
+              'status': 'pass',
+              'version': version,
+              'tag': os.environ['TAG'],
+              'sourceCommit': os.environ['GITHUB_SHA'],
+              'sourceRef': os.environ['GITHUB_REF'],
+              'sourceMasterCommit': os.environ['SOURCE_MASTER_COMMIT'],
+              'bridgeRepository': 'SupraCraft/Bridge',
+              'bridgeVersion': os.environ['BRIDGE_VERSION'],
+              'priorBridgeConsumerQualification': request.get('bridge_consumer_qualification'),
+              'artifact': jar.name,
+              'artifactSha256': hashlib.sha256(jar.read_bytes()).hexdigest(),
+              'checks': {
+                  'reactorVerify': 'pass',
+                  'reproducibility': 'pass',
+                  'artifactContract': 'pass',
+                  'exactBridgeReleaseCoordinate': 'pass',
+                  'supportedMinecraftMatrix': 'pass'
+              },
+              'minecraftSupportResults': support
+          }
+          pathlib.Path('RELEASE-QUALIFICATION.json').write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Generate stable checksums
+        run: >-
+          sha256sum
+          "artifacts/supracraft-vanillacord-${VERSION}.jar"
+          build/vanillacord-sbom.json
+          BUILD-METADATA.properties
+          REPRODUCIBILITY.properties
+          ARTIFACT-INVENTORY.txt
+          RELEASE-QUALIFICATION.json
+          build/minecraft-supported-releases.json
+          docs/minecraft-supported-releases.md
+          > SHA256SUMS
+
+      - name: Publish tested stable release assets
+        uses: softprops/action-gh-release@7c4723f7a335432393329f8f1c564994ce50185d
+        with:
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          name: VanillaCord ${{ env.VERSION }}
+          make_latest: true
+          body: |
+            Stable SupraCraft VanillaCord ${{ env.VERSION }}.
+
+            Built and qualified against exact Bridge ${{ env.BRIDGE_VERSION }}. Every declared supported Minecraft generation was patched and boot-smoked on its target Java runtime before publication.
+
+            Friendly download, support matrix, and release documentation: https://supracraft.github.io/VanillaCord/releases/${{ env.VERSION }}/
+          files: |
+            artifacts/supracraft-vanillacord-${{ env.VERSION }}.jar
+            build/vanillacord-sbom.json
+            BUILD-METADATA.properties
+            REPRODUCIBILITY.properties
+            ARTIFACT-INVENTORY.txt
+            RELEASE-QUALIFICATION.json
+            build/minecraft-supported-releases.json
+            docs/minecraft-supported-releases.md
+            SHA256SUMS
+          fail_on_unmatched_files: true

@@ -7,77 +7,18 @@
   <meta name="description" content="Connect vanilla Minecraft servers to proxy networks by patching server JARs for Velocity, BungeeCord, and BungeeGuard forwarding.">
   <link rel="canonical" href="https://supracraft.github.io/VanillaCord/">
   <link rel="icon" href="assets/brand/icon.svg" type="image/svg+xml">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="VanillaCord">
-  <meta property="og:description" content="Connect plain vanilla Minecraft backends to proxy networks.">
-  <meta property="og:url" content="https://supracraft.github.io/VanillaCord/">
-  <meta property="og:image" content="https://supracraft.github.io/VanillaCord/assets/brand/hero.svg">
   <meta name="theme-color" content="#F1E2BF">
   <style>
-    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#514A42;background:#F7F2E7;line-height:1.55}*{box-sizing:border-box}body{margin:0}a{color:inherit}.shell{max-width:1120px;margin:auto;padding:0 24px}.top{background:#F1E2BF;color:#514A42;border-bottom:1px solid #D3C39F}.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:760;font-size:1.15rem;text-decoration:none}.brand img{width:44px;height:44px}.links{display:flex;gap:18px;flex-wrap:wrap;font-size:.92rem}.links a{text-decoration:none}.hero{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:44px;align-items:center;padding:52px 0 60px}.hero h1{font-size:clamp(2.8rem,7vw,5.5rem);line-height:.95;margin:0 0 16px;letter-spacing:-.045em}.hero p{font-size:1.16rem;max-width:650px}.hero img{display:block;width:100%;border-radius:24px}.eyebrow{color:#6F6A3D;font-weight:760;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.button{display:inline-block;border:1px solid #8B785F;border-radius:9px;padding:10px 14px;text-decoration:none;font-weight:670;background:#F7F2E7}.button.primary{background:#B86B3F;color:#fff;border-color:#B86B3F}.main{padding:48px 0 72px}.facts,.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.fact,.card{background:#FFFCF5;border:1px solid #DCD2BF;border-radius:14px;padding:18px}.fact strong,.card h3{display:block;margin:0 0 6px}.fact code,code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.section{margin-top:42px}.section h2{font-size:1.65rem;margin:0 0 14px}.quiet{color:#716A61}.notice{border-left:4px solid #B86B3F;padding:10px 0 10px 16px}.safety{border-left-color:#3DA2B8}.machine{background:#E7EFE9;border-radius:14px;padding:20px}.machine a{margin-right:14px}.footer{border-top:1px solid #DCD2BF;padding:24px 0 40px;color:#716A61;font-size:.92rem}@media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:34px}.links{display:none}.hero img{order:-1}.hero h1{font-size:3.35rem}}
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#514A42;background:#F7F2E7;line-height:1.55}*{box-sizing:border-box}body{margin:0}a{color:inherit}.shell{max-width:1120px;margin:auto;padding:0 24px}.top{background:#F1E2BF;border-bottom:1px solid #D3C39F}.nav{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0}.brand{display:flex;align-items:center;gap:12px;font-weight:760;font-size:1.15rem;text-decoration:none}.brand img{width:44px;height:44px}.links{display:flex;gap:18px;flex-wrap:wrap}.links a{text-decoration:none}.hero{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:44px;align-items:center;padding:52px 0 60px}.hero h1{font-size:clamp(2.8rem,7vw,5.5rem);line-height:.95;margin:0 0 16px;letter-spacing:-.045em}.hero p{font-size:1.16rem;max-width:650px}.hero img{display:block;width:100%;border-radius:24px}.eyebrow{color:#6F6A3D;font-weight:760;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.button{display:inline-block;border:1px solid #8B785F;border-radius:9px;padding:11px 15px;text-decoration:none;font-weight:700;background:#F7F2E7}.button.primary{background:#B86B3F;color:#fff;border-color:#B86B3F}.main{padding:48px 0 72px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{background:#FFFCF5;border:1px solid #DCD2BF;border-radius:14px;padding:20px}.card h2,.card h3{margin-top:0}.section{margin-top:42px}.machine{background:#E7EFE9;border-radius:14px;padding:20px}.machine a{margin-right:14px}.quiet{color:#716A61}.footer{border-top:1px solid #DCD2BF;padding:24px 0 40px;color:#716A61}@media(max-width:760px){.hero{grid-template-columns:1fr}.links{display:none}.hero img{order:-1}}
   </style>
 </head>
 <body>
-<header class="top">
-  <div class="shell">
-    <nav class="nav" aria-label="Primary">
-      <a class="brand" href="./"><img src="assets/brand/icon.svg" alt=""><span>VanillaCord</span></a>
-      <div class="links"><a href="https://github.com/SupraCraft/VanillaCord/blob/master/README.md">Docs</a><a href="https://github.com/SupraCraft/VanillaCord/releases">Releases</a><a href="https://github.com/SupraCraft/VanillaCord">GitHub</a></div>
-    </nav>
-    <section class="hero">
-      <div>
-        <div class="eyebrow">Vanilla server → proxy network</div>
-        <h1>VanillaCord</h1>
-        <p>Connect vanilla Minecraft servers to proxy networks. VanillaCord patches Mojang server JARs so plain backends can use forwarded player identity from Velocity, BungeeCord, or BungeeGuard.</p>
-        <div class="actions"><a class="button primary" href="https://github.com/SupraCraft/VanillaCord/releases">Get VanillaCord</a><a class="button" href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/compatibility.md">Check compatibility</a></div>
-      </div>
-      <img src="assets/brand/hero.svg" alt="A vanilla server connected by a cream cable to a proxy network endpoint.">
-    </section>
-  </div>
-</header>
+<header class="top"><div class="shell"><nav class="nav"><a class="brand" href="./"><img src="assets/brand/icon.svg" alt=""><span>VanillaCord</span></a><div class="links"><a href="download/">Download</a><a href="support/">Supported versions</a><a href="guide/">Guide</a><a href="releases/">Releases</a></div></nav><section class="hero"><div><div class="eyebrow">Vanilla server → proxy network</div><h1>VanillaCord</h1><p>Connect vanilla Minecraft backend servers to Velocity, BungeeCord, or BungeeGuard without turning the setup process into a GitHub scavenger hunt.</p><div class="actions"><a class="button primary" href="download/">Download VanillaCord</a><a class="button" href="support/">See supported Minecraft releases</a></div></div><img src="assets/brand/hero.svg" alt="A vanilla server connected to a proxy network endpoint."></section></div></header>
 <main class="shell main">
-  <section class="facts" aria-label="Project facts">
-    <div class="fact"><strong>Designed for</strong>Vanilla Minecraft backend servers</div>
-    <div class="fact"><strong>Forwarding</strong>Velocity, BungeeCord, BungeeGuard</div>
-    <div class="fact"><strong>Patcher runtime</strong>Java 21</div>
-    <div class="fact"><strong>Output</strong><code>out/&lt;version&gt;.jar</code></div>
-  </section>
-
-  <section class="section">
-    <h2>How it fits</h2>
-    <div class="cards">
-      <article class="card"><h3>Start plain</h3><p>Choose the Mojang server versions you need. VanillaCord downloads the corresponding vanilla server JARs.</p></article>
-      <article class="card"><h3>Patch them</h3><p>Run VanillaCord once for those versions. Patched server JARs are written under <code>out/</code>.</p></article>
-      <article class="card"><h3>Put them behind the proxy</h3><p>Use the forwarding mode that matches your proxy and keep the backend network boundary closed to direct clients.</p></article>
-    </div>
-  </section>
-
-  <section class="section">
-    <h2>Quick start</h2>
-    <p>Download an exact release, then run:</p>
-    <p><code>java -jar supracraft-vanillacord-&lt;version&gt;.jar &lt;minecraft-versions...&gt;</code></p>
-    <p class="quiet">Minecraft releases can require different Java runtimes after patching. Use the compatibility documentation for the selected server version rather than assuming the patcher’s Java 21 runtime applies to every patched server.</p>
-  </section>
-
-  <section class="section notice safety">
-    <strong>Keep backend ports private.</strong> Forwarded identity is intended to arrive through the proxy. Firewall backend server ports so players cannot bypass that boundary and connect directly.
-  </section>
-
-  <section class="section">
-    <h2>Compatibility is measured, not guessed</h2>
-    <p>Current stable compatibility is a blocking validation target; development and best-effort legacy probes are advisory. See the <a href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/minecraft-compatibility-report.md">latest recorded report</a>, <a href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/compatibility.md">operations guide</a>, and <a href="https://github.com/SupraCraft/VanillaCord/blob/master/COMPATIBILITY_STRATEGY.md">strategy</a>.</p>
-  </section>
-
-  <section class="section notice">
-    <strong>SupraCraft-maintained fork.</strong> VanillaCord is derived from <a href="https://github.com/ME1312/VanillaCord">ME1312/VanillaCord</a>. Upstream authorship and license history are preserved; SupraCraft-produced artifacts use SupraCraft identity and provenance.
-  </section>
-
-  <section class="section machine">
-    <h2>For automation and agents</h2>
-    <p class="quiet">Generated Pages endpoints mirror canonical repository contracts. Prefer them or the source files over scraping presentation HTML.</p>
-    <p><a href="project.json">project.json</a><a href="github.json">github.json</a><a href="artifacts.json">artifacts.json</a><a href="compatibility.json">compatibility.json</a><a href="brand.json">brand.json</a><a href="llms.txt">llms.txt</a></p>
-  </section>
-</main>
-<footer class="footer"><div class="shell">VanillaCord · SupraCraft · MPL-2.0 · <a href="https://github.com/SupraCraft/VanillaCord/blob/master/docs/brand-guidelines.md">Brand/public-surface notes</a></div></footer>
-</body>
-</html>
+<section class="cards"><article class="card"><h2>Download</h2><p>Get the current stable JAR, checksum, and release information from a page written for server operators.</p><p><a href="download/">Go to downloads →</a></p></article><article class="card"><h2>Supported versions</h2><p>See a simple green/red compatibility table backed by release qualification, not guesses.</p><p><a href="support/">Check support →</a></p></article><article class="card"><h2>Setup guide</h2><p>Patch a Mojang server, configure proxy forwarding, and keep the backend safely behind the proxy.</p><p><a href="guide/">Read the guide →</a></p></article></section>
+<section class="section"><h2>What VanillaCord does</h2><p>VanillaCord downloads the Mojang server JAR for the Minecraft version you select, patches it for proxy forwarding, and writes the patched server under <code>out/</code>. It is intended for vanilla backend servers; servers with their own forwarding implementation should use that implementation instead.</p></section>
+<section class="section"><h2>Release confidence</h2><p>Stable releases are built reproducibly, record the exact Bridge dependency, and must pass the declared Minecraft support matrix before publication. Each supported Minecraft generation is patched, its output JAR is checked, and the patched server is boot-smoked on the target Java runtime.</p></section>
+<section class="section machine"><h2>For scripts and automation</h2><p class="quiet">These endpoints are stable public interfaces; consumers should not scrape GitHub release pages.</p><p><a href="releases/stable.json">releases/stable.json</a><a href="releases/stable.txt">releases/stable.txt</a><a href="releases/stable-url.txt">releases/stable-url.txt</a><a href="releases/stable-sha256.txt">releases/stable-sha256.txt</a><a href="support-matrix.json">support-matrix.json</a><a href="project.json">project.json</a><a href="github.json">github.json</a><a href="brand.json">brand.json</a><a href="artifacts.json">artifacts.json</a><a href="compatibility.json">compatibility.json</a><a href="llms.txt">llms.txt</a></p></section>
+<section class="section"><p class="quiet">VanillaCord is a SupraCraft-maintained fork of ME1312/VanillaCord. Upstream authorship and license history are preserved. Developer source and contribution material remain available from the <a href="https://github.com/SupraCraft/VanillaCord">GitHub repository</a>, but normal user flows stay on this site.</p></section>
+</main><footer class="footer"><div class="shell">VanillaCord · SupraCraft · MPL-2.0</div></footer>
+</body></html>

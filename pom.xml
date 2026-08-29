@@ -20,7 +20,7 @@
 
     <properties>
         <bridge.owner>SupraCraft</bridge.owner>
-        <bridge.version>0.1.0-dev.34</bridge.version>
+        <bridge.version>0.1.0</bridge.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.outputTimestamp>2000-01-01T00:00:00Z</project.build.outputTimestamp>

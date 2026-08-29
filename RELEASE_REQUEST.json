@@ -1,0 +1,12 @@
+{
+  "schema": "vanillacord-stable-release-request/1",
+  "version": "2.9.0",
+  "tag": "v2.9.0",
+  "bridge_version": "0.1.0",
+  "source_master_commit": "58d00f2f881e1b997b1d5feb7983428636ba8a9f",
+  "bridge_consumer_qualification": {
+    "workflow_run_id": 33243181762,
+    "source_commit": "84209499767bd81d480507c8af06f1b555d563d9",
+    "status": "pass"
+  }
+}

@@ -4,7 +4,7 @@
 
     <groupId>io.github.supracraft.vanillacord</groupId>
     <artifactId>vanillacord</artifactId>
-    <version>2.9.0-dev</version>
+    <version>2.9.0</version>
     <packaging>jar</packaging>
     <name>SupraCraft VanillaCord</name>
     <description>SupraCraft-maintained fork of ME1312/VanillaCord</description>

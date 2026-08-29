@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const stable = JSON.parse(fs.readFileSync('STABLE_RELEASE.json', 'utf8'));
+const expectedOrigin = new URL(process.env.SITE_BASE_URL || 'http://127.0.0.1:4173/').origin;
 const routes = [
   '/',
   '/download/',
@@ -12,6 +13,10 @@ const routes = [
   `/releases/${stable.version}/`,
   '/accessibility/',
 ];
+
+function assertExpectedOrigin(page, label) {
+  expect(new URL(page.url()).origin, `${label} must stay on the site under test`).toBe(expectedOrigin);
+}
 
 async function assertNoHorizontalOverflow(page, label) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -36,6 +41,7 @@ for (const route of routes) {
 
     const response = await page.goto(route, { waitUntil: 'networkidle' });
     expect(response?.status()).toBeLessThan(400);
+    assertExpectedOrigin(page, `${testInfo.project.name} ${route}`);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('h1')).toHaveCount(1);
     await expect(page.locator('nav[aria-label="Primary"]')).toHaveCount(1);
@@ -66,7 +72,9 @@ for (const route of routes) {
 
 test('primary user journeys stay on the friendly site', async ({ page }) => {
   await page.goto('/');
+  assertExpectedOrigin(page, 'homepage');
   await page.getByRole('link', { name: 'Download VanillaCord' }).click();
+  assertExpectedOrigin(page, 'download journey');
   await expect(page).toHaveURL(/\/download\/$/);
   await expect(page.getByRole('heading', { level: 1 })).toContainText(`VanillaCord ${stable.version}`);
 
@@ -75,15 +83,18 @@ test('primary user journeys stay on the friendly site', async ({ page }) => {
   expect(stable.artifact.download_url).toContain('/releases/download/');
 
   await page.getByRole('link', { name: 'Supported versions' }).click();
+  assertExpectedOrigin(page, 'support journey');
   await expect(page).toHaveURL(/\/support\/$/);
   await expect(page.getByRole('table')).toBeVisible();
 
   await page.getByRole('link', { name: 'Guide' }).click();
+  assertExpectedOrigin(page, 'guide journey');
   await expect(page).toHaveURL(/\/guide\/$/);
 });
 
 test('theme System, Light, and Dark work and persist', async ({ page }) => {
   await page.goto('/');
+  assertExpectedOrigin(page, 'theme test homepage');
   await page.evaluate(() => localStorage.removeItem('supracraft-theme'));
   await page.emulateMedia({ colorScheme: 'light' });
   await page.reload();
@@ -110,6 +121,7 @@ test('320px reflow keeps navigation and primary controls usable', async ({ page 
   await page.setViewportSize({ width: 320, height: 800 });
   for (const route of routes) {
     await page.goto(route, { waitUntil: 'networkidle' });
+    assertExpectedOrigin(page, `320px ${route}`);
     await assertNoHorizontalOverflow(page, `320px ${route}`);
     const navLinks = page.locator('nav[aria-label="Primary"] a');
     for (let index = 0; index < await navLinks.count(); index += 1) {
@@ -130,6 +142,7 @@ test('320px reflow keeps navigation and primary controls usable', async ({ page 
 test('desktop keyboard users can skip directly to main content', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith('desktop-'), 'keyboard tab-order check applies to desktop browser projects');
   await page.goto('/');
+  assertExpectedOrigin(page, `${testInfo.project.name} keyboard test`);
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Tab');
   await expect(page.locator('.skip-link')).toBeFocused();

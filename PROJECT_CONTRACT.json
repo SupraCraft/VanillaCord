@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4.1",
+  "schema_version": "1.5.0",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
@@ -46,11 +46,21 @@
     "consumer_qualification_evidence": "build/bridge-consumer-qualification/bridge-consumer-qualification.json",
     "user_identity_visibility": "implementation-detail-not-part-of-brand"
   },
+  "stable_release": {
+    "manifest": "STABLE_RELEASE.json",
+    "archive": "release-manifests/<version>.json",
+    "request": "RELEASE_REQUEST.json",
+    "workflow": ".github/workflows/stable-release.yml",
+    "supported_minecraft": "SUPPORTED_MINECRAFT.json",
+    "supported_matrix_gate": "scripts/run-supported-matrix.py",
+    "publication_policy": "publish only after reproducibility, artifact, exact Bridge, and all declared Minecraft patch+boot gates pass"
+  },
   "validation": {
     "build": "./mvnw -B verify",
     "artifact_contract": "scripts/verify-artifact-contract.sh",
     "reproducibility": "scripts/verify-reproducible-build.sh",
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
+    "supported_minecraft_matrix": "scripts/run-supported-matrix.py",
     "bridge_consumer_qualification": ".github/workflows/compatibility.yml",
     "documentation_contract": "scripts/check-documentation-contract.sh",
     "release_bridge_input_policy": "scripts/check-release-bridge-policy.sh",
@@ -90,7 +100,32 @@
     "brand_profile": "BRAND_PROFILE.json",
     "brand_manifest": "docs/assets/brand/brand.json",
     "brand_guidelines": "docs/brand-guidelines.md",
-    "machine_endpoints": ["project.json", "github.json", "brand.json", "artifacts.json", "compatibility.json", "llms.txt"],
+    "human_routes": {
+      "download": "download/",
+      "guide": "guide/",
+      "support": "support/",
+      "releases": "releases/",
+      "release_info": "releases/<version>/"
+    },
+    "machine_endpoints": [
+      "project.json",
+      "github.json",
+      "brand.json",
+      "artifacts.json",
+      "compatibility.json",
+      "support-matrix.json",
+      "releases/stable.json",
+      "releases/stable.txt",
+      "releases/stable-url.txt",
+      "releases/stable-sha256.txt",
+      "llms.txt"
+    ],
+    "stable_lookup_contract": {
+      "json": "releases/stable.json",
+      "version": "releases/stable.txt",
+      "artifact_url": "releases/stable-url.txt",
+      "sha256": "releases/stable-sha256.txt"
+    },
     "upstream_attribution_required": true
   },
   "provenance": {
@@ -99,6 +134,7 @@
     "records_exact_bridge_coordinate": true,
     "records_bridge_consumer_qualification_evidence": true,
     "records_git_commit_ref_run": true,
+    "records_supported_minecraft_matrix": true,
     "fixed_archive_output_timestamp": true
   },
   "documentation": {

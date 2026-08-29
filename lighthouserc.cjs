@@ -7,6 +7,12 @@ module.exports = {
       startServerReadyPattern: 'Serving HTTP on',
       startServerReadyTimeout: 120000,
       numberOfRuns: 1,
+      settings: {
+        // GitHub-hosted Ubuntu runners block Chrome's normal sandbox via the
+        // host user-namespace policy. This applies only to the ephemeral
+        // Lighthouse browser auditing our generated local static candidate.
+        chromeFlags: '--no-sandbox'
+      },
       url: [
         `${baseURL}/`,
         `${baseURL}/download/`,

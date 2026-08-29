@@ -8,6 +8,13 @@ build_commit="${4:?build commit is required}"
 build_ref="${5:?build ref is required}"
 build_number="${6:?build number is required}"
 
+# Development integration deliberately tracks immutable Bridge dev builds.
+# Any non-development VanillaCord artifact is release work and must instead
+# consume an exact Bridge release-candidate or stable coordinate.
+if [[ "$version" != *-dev && ! "$version" =~ -dev\.[0-9]+$ ]]; then
+  python3 "$(dirname "$0")/validate-release-bridge-version.py" "$bridge_version"
+fi
+
 expected="artifacts/supracraft-vanillacord-${version}.jar"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT

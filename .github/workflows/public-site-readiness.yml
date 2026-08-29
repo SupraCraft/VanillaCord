@@ -93,7 +93,6 @@ jobs:
             --exclude '^https://supracraft\.github\.io/VanillaCord/'
             './README.md'
             './docs/**/*.md'
-            './docs/**/*.html'
             './build/public-site/**/*.html'
 
       - name: Upload public-site readiness evidence

@@ -154,7 +154,8 @@ for project in contract['validation']['browser_projects']:
 assert 'Pixel 5' in playwright_config
 assert 'iPhone 13' in playwright_config
 assert 'SITE_BASE_URL' in playwright_config
-assert 'externalBaseURL ? undefined' in playwright_config
+assert 'webServer: externalBaseURL' in playwright_config
+assert '? undefined' in playwright_config
 assert '@axe-core/playwright' in browser_spec
 assert '320px reflow' in browser_spec
 assert 'primary user journeys' in browser_spec

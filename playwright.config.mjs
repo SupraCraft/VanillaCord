@@ -1,9 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.SITE_BASE_URL || 'http://127.0.0.1:4173/';
+const externalBaseURL = process.env.SITE_BASE_URL;
+const baseURL = externalBaseURL || 'http://127.0.0.1:4173/';
 
 export default defineConfig({
   testDir: './tests/site',
+  outputDir: 'build/playwright-results',
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: true,
@@ -17,12 +19,14 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  webServer: {
-    command: `python3 scripts/build-public-site.py --output build/public-site --base-url ${baseURL} && python3 -m http.server 4173 --directory build/public-site --bind 127.0.0.1`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: externalBaseURL
+    ? undefined
+    : {
+        command: `python3 scripts/build-public-site.py --output build/public-site --base-url ${baseURL} && python3 -u -m http.server 4173 --directory build/public-site --bind 127.0.0.1`,
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      },
   projects: [
     { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'desktop-firefox', use: { ...devices['Desktop Firefox'] } },

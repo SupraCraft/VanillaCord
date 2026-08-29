@@ -1,15 +1,19 @@
+const baseURL = 'http://127.0.0.1:4174';
+
 module.exports = {
   ci: {
     collect: {
-      staticDistDir: './build/public-site',
+      startServerCommand: `python3 scripts/build-public-site.py --output build/public-site --base-url ${baseURL}/ && python3 -u -m http.server 4174 --directory build/public-site --bind 127.0.0.1`,
+      startServerReadyPattern: 'Serving HTTP on',
+      startServerReadyTimeout: 120000,
       numberOfRuns: 1,
       url: [
-        'http://localhost/',
-        'http://localhost/download/',
-        'http://localhost/support/',
-        'http://localhost/guide/',
-        'http://localhost/releases/',
-        'http://localhost/accessibility/'
+        `${baseURL}/`,
+        `${baseURL}/download/`,
+        `${baseURL}/support/`,
+        `${baseURL}/guide/`,
+        `${baseURL}/releases/`,
+        `${baseURL}/accessibility/`
       ]
     },
     assert: {

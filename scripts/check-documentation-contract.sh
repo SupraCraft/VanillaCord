@@ -12,10 +12,13 @@ required=(
   COMPATIBILITY_STRATEGY.md
   docs/.nojekyll
   docs/DOCUMENTATION_POLICY.md
+  docs/PUBLIC_SITE_RELEASE_READINESS.md
   docs/compatibility.md
   docs/artifact-retention.md
   docs/index.html
   docs/brand-guidelines.md
+  docs/assets/site.css
+  docs/assets/site.js
   docs/assets/brand/icon.svg
   docs/assets/brand/hero.svg
   docs/assets/brand/brand.json
@@ -24,12 +27,23 @@ required=(
   scripts/build-public-site.py
   scripts/check-public-site.py
   scripts/configure-bridge-qualification.py
+  package.json
+  playwright.config.mjs
+  lighthouserc.cjs
+  tests/site/public-site.spec.mjs
   .github/workflows/compatibility.yml
+  .github/workflows/documentation.yml
+  .github/workflows/public-site-readiness.yml
   .github/workflows/pages.yml
 )
 for path in "${required[@]}"; do
   test -s "$path" || { echo "Missing required documentation/public surface: $path" >&2; exit 1; }
 done
+
+test ! -e scripts/check-public-site-browser.mjs || {
+  echo 'Retired bespoke browser runner is still present.' >&2
+  exit 1
+}
 
 cmp docs/assets/brand/icon.svg resources/META-INF/supracraft/vanillacord/icon.svg
 
@@ -45,8 +59,14 @@ contract = json.loads(Path('PROJECT_CONTRACT.json').read_text(encoding='utf-8'))
 profile = json.loads(Path('BRAND_PROFILE.json').read_text(encoding='utf-8'))
 metadata = json.loads(Path('GITHUB_METADATA.json').read_text(encoding='utf-8'))
 brand = json.loads(Path('docs/assets/brand/brand.json').read_text(encoding='utf-8'))
+package = json.loads(Path('package.json').read_text(encoding='utf-8'))
 page = Path('docs/index.html').read_text(encoding='utf-8')
 pages_workflow = Path('.github/workflows/pages.yml').read_text(encoding='utf-8')
+readiness_workflow = Path('.github/workflows/public-site-readiness.yml').read_text(encoding='utf-8')
+playwright_config = Path('playwright.config.mjs').read_text(encoding='utf-8')
+lighthouse_config = Path('lighthouserc.cjs').read_text(encoding='utf-8')
+browser_spec = Path('tests/site/public-site.spec.mjs').read_text(encoding='utf-8')
+readiness_doc = Path('docs/PUBLIC_SITE_RELEASE_READINESS.md').read_text(encoding='utf-8')
 compatibility_workflow = Path('.github/workflows/compatibility.yml').read_text(encoding='utf-8')
 qualification_configurator = Path('scripts/configure-bridge-qualification.py').read_text(encoding='utf-8')
 
@@ -74,6 +94,20 @@ assert contract['validation']['bridge_consumer_qualification'] == '.github/workf
 assert contract['provenance']['records_bridge_consumer_qualification_evidence'] is True
 assert contract['validation']['public_site_builder'] == 'scripts/build-public-site.py'
 assert contract['validation']['public_site_check'] == 'scripts/check-public-site.py'
+assert contract['validation']['public_site_readiness_workflow'] == '.github/workflows/public-site-readiness.yml'
+assert contract['validation']['public_site_playwright_config'] == 'playwright.config.mjs'
+assert contract['validation']['public_site_browser_test'] == 'tests/site/public-site.spec.mjs'
+assert contract['validation']['public_site_accessibility_engine'] == '@axe-core/playwright'
+assert contract['validation']['public_site_lighthouse_config'] == 'lighthouserc.cjs'
+assert contract['validation']['public_site_link_checker'] == 'lycheeverse/lychee-action'
+assert contract['validation']['browser_projects'] == [
+    'desktop-chromium',
+    'desktop-firefox',
+    'desktop-webkit',
+    'android-chromium',
+    'iphone-webkit',
+]
+assert contract['validation']['accessibility_target'] == 'WCAG 2.2 AA'
 assert contract['validation']['compatibility_tiers'] == {
     'current-stable': 'blocking',
     'required-supported': 'blocking-when-requested',
@@ -81,6 +115,7 @@ assert contract['validation']['compatibility_tiers'] == {
     'best-effort': 'advisory',
 }
 assert contract['documentation']['artifact_retention'] == 'docs/artifact-retention.md'
+assert contract['documentation']['public_site_release_readiness'] == 'docs/PUBLIC_SITE_RELEASE_READINESS.md'
 assert contract['public_surface']['github_metadata'] == 'GITHUB_METADATA.json'
 assert contract['public_surface']['metadata_apply'] == 'scripts/apply-github-metadata.py'
 assert contract['public_surface']['pages_entrypoint'] == 'docs/index.html'
@@ -88,6 +123,8 @@ assert contract['public_surface']['pages_source'] == 'github-actions'
 assert contract['public_surface']['pages_workflow'] == '.github/workflows/pages.yml'
 assert contract['public_surface']['site_builder'] == 'scripts/build-public-site.py'
 assert contract['public_surface']['brand_manifest'] == 'docs/assets/brand/brand.json'
+assert contract['public_surface']['readiness_policy'] == 'docs/PUBLIC_SITE_RELEASE_READINESS.md'
+assert contract['public_surface']['human_routes']['accessibility'] == 'accessibility/'
 assert contract['public_surface']['pages_url'] == metadata['homepage'] == metadata['pages']['url']
 assert metadata['repository'] == contract['repository']
 assert metadata['upstream_repository'] == contract['upstream_repository']
@@ -105,9 +142,42 @@ assert 'ME1312/VanillaCord' in page
 assert 'SupraCraft/Bridge' not in page
 assert metadata['homepage'] in page
 assert metadata['description'] in page
-assert 'scripts/check-public-site.py' in pages_workflow
-assert '--site-dir build/public-site' in pages_workflow
-assert '--base-url "${{ steps.deployment.outputs.page_url }}"' in pages_workflow
+
+for dependency in ('@playwright/test', '@axe-core/playwright', '@lhci/cli'):
+    assert dependency in package['devDependencies']
+    assert not package['devDependencies'][dependency].startswith(('^', '~')), f'{dependency} must be exact-pinned'
+assert package['scripts']['site:test'] == 'playwright test'
+assert package['scripts']['site:lighthouse'] == 'lhci autorun'
+
+for project in contract['validation']['browser_projects']:
+    assert f"name: '{project}'" in playwright_config
+assert 'Pixel 5' in playwright_config
+assert 'iPhone 13' in playwright_config
+assert 'SITE_BASE_URL' in playwright_config
+assert 'webServer: externalBaseURL' in playwright_config
+assert '? undefined' in playwright_config
+assert '@axe-core/playwright' in browser_spec
+assert '320px reflow' in browser_spec
+assert 'primary user journeys' in browser_spec
+assert 'startServerCommand' in lighthouse_config
+assert 'categories:accessibility' in lighthouse_config
+assert 'categories:performance' in lighthouse_config
+
+for workflow in (readiness_workflow, pages_workflow):
+    for fragment in (
+        'npx playwright install --with-deps chromium firefox webkit',
+        'npm run site:test',
+        'npm run site:lighthouse',
+        'lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8',
+    ):
+        assert fragment in workflow, f'missing public-site readiness workflow contract: {fragment}'
+assert 'SITE_BASE_URL: ${{ steps.deployment.outputs.page_url }}' in pages_workflow
+assert '--grep "primary user journeys"' in pages_workflow
+assert 'scripts/check-public-site-browser.mjs' not in readiness_doc
+assert 'Playwright Test' in readiness_doc
+assert 'Lighthouse CI' in readiness_doc
+assert 'Lychee' in readiness_doc
+assert 'WCAG 2.2 Level AA' in readiness_doc
 
 for fragment in (
     "branches: ['qualification/bridge/**']",
@@ -166,6 +236,7 @@ with tempfile.TemporaryDirectory() as tmp:
     out = Path(tmp)
     for name in contract['public_surface']['machine_endpoints']:
         assert (out / name).is_file(), f'missing generated endpoint: {name}'
+    assert (out / contract['public_surface']['human_routes']['accessibility'] / 'index.html').is_file()
     assert json.loads((out / 'project.json').read_text()) == contract
     assert json.loads((out / 'github.json').read_text()) == metadata
     assert json.loads((out / 'brand.json').read_text()) == brand
@@ -193,6 +264,7 @@ active_docs=(
   docs/artifact-retention.md
   docs/index.html
   docs/brand-guidelines.md
+  docs/PUBLIC_SITE_RELEASE_READINESS.md
 )
 
 if grep -nHE '0\.1\.0-dev\.[0-9]+' "${active_docs[@]}"; then

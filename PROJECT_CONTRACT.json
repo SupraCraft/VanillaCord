@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.5.0",
+  "schema_version": "1.6.0",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
@@ -15,7 +15,9 @@
     "maven": "io.github.supracraft.vanillacord:vanillacord:<version>",
     "standalone": "supracraft-vanillacord-<version>.jar",
     "embedded_project_icon": "META-INF/supracraft/vanillacord/icon.svg",
-    "historical_aliases_forbidden_in_current_output": ["VanillaCord.jar"]
+    "historical_aliases_forbidden_in_current_output": [
+      "VanillaCord.jar"
+    ]
   },
   "versioning": {
     "development_source": "X.Y.Z-dev",
@@ -36,7 +38,10 @@
     "group": "io.github.supracraft.bridge",
     "versioning": "independent",
     "release_input_policy": "exact immutable coordinate",
-    "release_input_allowed": ["X.Y.Z-rc.N", "X.Y.Z"],
+    "release_input_allowed": [
+      "X.Y.Z-rc.N",
+      "X.Y.Z"
+    ],
     "release_input_validator": "scripts/validate-release-bridge-version.py",
     "release_input_policy_check": "scripts/check-release-bridge-policy.sh",
     "consumer_qualification_workflow": ".github/workflows/compatibility.yml",
@@ -66,6 +71,20 @@
     "release_bridge_input_policy": "scripts/check-release-bridge-policy.sh",
     "public_site_builder": "scripts/build-public-site.py",
     "public_site_check": "scripts/check-public-site.py",
+    "public_site_readiness_workflow": ".github/workflows/public-site-readiness.yml",
+    "public_site_playwright_config": "playwright.config.mjs",
+    "public_site_browser_test": "tests/site/public-site.spec.mjs",
+    "public_site_accessibility_engine": "@axe-core/playwright",
+    "public_site_lighthouse_config": "lighthouserc.cjs",
+    "public_site_link_checker": "lycheeverse/lychee-action",
+    "browser_projects": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "desktop-webkit",
+      "android-chromium",
+      "iphone-webkit"
+    ],
+    "accessibility_target": "WCAG 2.2 AA",
     "compatibility_tiers": {
       "current-stable": "blocking",
       "required-supported": "blocking-when-requested",
@@ -100,12 +119,14 @@
     "brand_profile": "BRAND_PROFILE.json",
     "brand_manifest": "docs/assets/brand/brand.json",
     "brand_guidelines": "docs/brand-guidelines.md",
+    "readiness_policy": "docs/PUBLIC_SITE_RELEASE_READINESS.md",
     "human_routes": {
       "download": "download/",
       "guide": "guide/",
       "support": "support/",
       "releases": "releases/",
-      "release_info": "releases/<version>/"
+      "release_info": "releases/<version>/",
+      "accessibility": "accessibility/"
     },
     "machine_endpoints": [
       "project.json",
@@ -151,6 +172,7 @@
     "brand_profile": "BRAND_PROFILE.json",
     "pages_entrypoint": "docs/index.html",
     "brand_guidelines": "docs/brand-guidelines.md",
+    "public_site_release_readiness": "docs/PUBLIC_SITE_RELEASE_READINESS.md",
     "modernization_ledger": "docs/build-modernization-status.md",
     "historical_modernization_record": "MODERNIZATION_PLAN.md"
   }

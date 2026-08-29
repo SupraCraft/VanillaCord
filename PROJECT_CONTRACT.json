@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.4.0",
+  "schema_version": "1.4.1",
   "repository": "SupraCraft/VanillaCord",
   "upstream_repository": "ME1312/VanillaCord",
   "role": "patch vanilla Minecraft server jars for proxy forwarding",
@@ -35,7 +35,7 @@
     "repository": "SupraCraft/Bridge",
     "group": "io.github.supracraft.bridge",
     "versioning": "independent",
-    "release_input_policy": "exact immutable coordinate",
+    "release_input_policy": "exact immutable release-candidate or stable coordinate",
     "consumer_qualification_workflow": ".github/workflows/compatibility.yml",
     "consumer_qualification_branch": "qualification/bridge/<version>",
     "consumer_qualification_manifest": "BRIDGE_QUALIFICATION.json",

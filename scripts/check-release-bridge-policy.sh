@@ -33,7 +33,12 @@ import json
 from pathlib import Path
 
 contract = json.loads(Path('PROJECT_CONTRACT.json').read_text(encoding='utf-8'))
-assert contract['bridge']['release_input_policy'] == 'exact immutable release-candidate or stable coordinate'
+bridge = contract['bridge']
+assert bridge['release_input_policy'] == 'exact immutable coordinate'
+assert bridge['release_input_allowed'] == ['X.Y.Z-rc.N', 'X.Y.Z']
+assert bridge['release_input_validator'] == 'scripts/validate-release-bridge-version.py'
+assert bridge['release_input_policy_check'] == 'scripts/check-release-bridge-policy.sh'
+assert contract['validation']['release_bridge_input_policy'] == 'scripts/check-release-bridge-policy.sh'
 
 versioning = Path('VERSIONING.md').read_text(encoding='utf-8')
 assert 'X.Y.Z-rc.N` or stable `X.Y.Z` Bridge coordinate' in versioning

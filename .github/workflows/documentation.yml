@@ -16,6 +16,9 @@ on:
       - 'docs/**'
       - 'resources/**'
       - 'scripts/check-documentation-contract.sh'
+      - 'scripts/check-release-bridge-policy.sh'
+      - 'scripts/validate-release-bridge-version.py'
+      - 'scripts/verify-reproducible-build.sh'
       - 'scripts/configure-bridge-qualification.py'
       - 'scripts/build-public-site.py'
       - 'scripts/check-public-site.py'
@@ -42,6 +45,9 @@ on:
       - 'docs/**'
       - 'resources/**'
       - 'scripts/check-documentation-contract.sh'
+      - 'scripts/check-release-bridge-policy.sh'
+      - 'scripts/validate-release-bridge-version.py'
+      - 'scripts/verify-reproducible-build.sh'
       - 'scripts/configure-bridge-qualification.py'
       - 'scripts/build-public-site.py'
       - 'scripts/check-public-site.py'
@@ -65,3 +71,5 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Validate documentation and public surface
         run: bash ./scripts/check-documentation-contract.sh
+      - name: Validate release Bridge input policy
+        run: bash ./scripts/check-release-bridge-policy.sh

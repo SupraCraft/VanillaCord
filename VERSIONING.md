@@ -42,7 +42,7 @@ A release build derives its project version from the explicit release/tag input.
 
 Canonical Bridge coordinates use `io.github.supracraft.bridge`. Development integration CI may resolve the newest immutable `X.Y.Z-dev.N` Bridge build to expose integration failures early. Every resulting VanillaCord artifact records the exact coordinate consumed.
 
-Release and reproducibility work must use an exact immutable Bridge version. Do not rely on mutable `latest` metadata as a release input.
+Release and reproducibility work must use an exact immutable release-grade Bridge version: an `X.Y.Z-rc.N` or stable `X.Y.Z` Bridge coordinate. An `X.Y.Z-dev.N` Bridge coordinate is rejected for release work even if supplied through a workflow or repository override. Do not rely on mutable `latest` metadata as a release input.
 
 ## Embedded provenance
 

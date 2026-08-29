@@ -59,8 +59,8 @@ jobs:
       - name: Build candidate public site
         run: python3 ./scripts/build-public-site.py --output build/public-site --base-url http://127.0.0.1:4173/
 
-      - name: Validate deterministic public-site contract
-        run: python3 ./scripts/check-public-site.py --site-dir build/public-site
+      - name: Validate deterministic candidate contract
+        run: python3 ./scripts/check-public-site.py --site-dir build/public-site --navigation-base http://127.0.0.1:4173/
 
       - name: Install web QA dependencies
         run: npm install --ignore-scripts --no-audit --no-fund

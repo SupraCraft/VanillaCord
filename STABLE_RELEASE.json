@@ -1,16 +1,36 @@
 {
   "schema": "vanillacord-published-release/1",
-  "version": "2.8",
-  "tag": "v2.8",
+  "version": "2.9.0",
+  "tag": "v2.9.0",
   "channel": "stable",
-  "published_at": "2026-06-21T21:08:51Z",
-  "release_url": "https://github.com/SupraCraft/VanillaCord/releases/tag/v2.8",
-  "info_url": "https://supracraft.github.io/VanillaCord/releases/2.8/",
+  "published_at": "2026-08-30T09:51:47Z",
+  "release_url": "https://github.com/SupraCraft/VanillaCord/releases/tag/v2.9.0",
+  "info_url": "https://supracraft.github.io/VanillaCord/releases/2.9.0/",
   "artifact": {
-    "name": "VanillaCord.jar",
-    "download_url": "https://github.com/SupraCraft/VanillaCord/releases/download/v2.8/VanillaCord.jar",
-    "sha256": "835ac894945814047326d00556c30163bada6306a36544a28a5035c22a51fff6"
+    "name": "supracraft-vanillacord-2.9.0.jar",
+    "download_url": "https://github.com/SupraCraft/VanillaCord/releases/download/v2.9.0/supracraft-vanillacord-2.9.0.jar",
+    "sha256": "24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719"
   },
-  "legacy_naming": true,
-  "summary": "Previous stable VanillaCord release. The next stable release adopts SupraCraft canonical artifact naming and release provenance."
+  "legacy_naming": false,
+  "bridge_version": "0.1.0",
+  "minecraft_support": [
+    {"version": "26.2", "status": "pass"},
+    {"version": "1.21.11", "status": "pass"},
+    {"version": "1.20.6", "status": "pass"},
+    {"version": "1.20.4", "status": "pass"},
+    {"version": "1.19.4", "status": "pass"},
+    {"version": "1.18.2", "status": "pass"},
+    {"version": "1.17.1", "status": "pass"},
+    {"version": "1.16.5", "status": "pass"},
+    {"version": "1.15.2", "status": "pass"},
+    {"version": "1.14.4", "status": "pass"},
+    {"version": "1.13.2", "status": "pass"},
+    {"version": "1.12.2", "status": "pass"},
+    {"version": "1.11.2", "status": "pass"},
+    {"version": "1.10.2", "status": "pass"},
+    {"version": "1.9.4", "status": "pass"},
+    {"version": "1.8.9", "status": "pass"},
+    {"version": "1.7.10", "status": "pass"}
+  ],
+  "summary": "Stable SupraCraft VanillaCord 2.9.0, reproducibly built and fully qualified across every declared supported Minecraft generation before publication."
 }

@@ -6,6 +6,8 @@ const stable = JSON.parse(fs.readFileSync('STABLE_RELEASE.json', 'utf8'));
 const siteBaseUrl = new URL(process.env.SITE_BASE_URL || 'http://127.0.0.1:4173/');
 const expectedOrigin = siteBaseUrl.origin;
 const expectedBasePath = siteBaseUrl.pathname.endsWith('/') ? siteBaseUrl.pathname : `${siteBaseUrl.pathname}/`;
+const sourceUrl = 'https://github.com/SupraCraft/VanillaCord';
+const allowedExternalUrls = new Set([sourceUrl, stable.artifact.download_url]);
 const routes = [
   '/',
   '/download/',
@@ -18,6 +20,11 @@ const routes = [
 
 function routeUrl(route) {
   return new URL(route.replace(/^\/+/, ''), siteBaseUrl).toString();
+}
+
+function isInternalUrl(value) {
+  const target = new URL(value, siteBaseUrl);
+  return target.origin === expectedOrigin && target.pathname.startsWith(expectedBasePath);
 }
 
 function assertExpectedSite(page, label) {
@@ -36,6 +43,49 @@ async function assertA11y(page, label) {
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'])
     .analyze();
   expect(results.violations, `${label} axe violations: ${results.violations.map(v => v.id).join(', ')}`).toEqual([]);
+}
+
+async function assertOutlinkContract(page, label) {
+  const navHrefs = await page.locator('nav[aria-label="Primary"] a[href]').evaluateAll(nodes => nodes.map(node => node.href));
+  for (const href of navHrefs) {
+    expect(isInternalUrl(href), `${label} primary navigation must remain internal: ${href}`).toBe(true);
+  }
+
+  const anchors = await page.locator('a[href]').evaluateAll(nodes => nodes.map(node => {
+    const indicator = node.querySelector('.external-link-indicator');
+    const note = node.querySelector('.sr-only');
+    const rect = indicator?.getBoundingClientRect();
+    const style = indicator ? getComputedStyle(indicator) : null;
+    return {
+      href: node.href,
+      target: node.getAttribute('target') || '',
+      rel: node.getAttribute('rel') || '',
+      className: node.className,
+      indicatorText: indicator?.textContent?.trim() || '',
+      indicatorAriaHidden: indicator?.getAttribute('aria-hidden') || '',
+      indicatorVisible: Boolean(indicator && rect && rect.width > 0 && rect.height > 0 && style?.display !== 'none' && style?.visibility !== 'hidden'),
+      noteText: note?.textContent?.trim() || '',
+    };
+  }));
+
+  const external = anchors.filter(anchor => !isInternalUrl(anchor.href));
+  expect(external.length, `${label} should expose only explicit external handoffs`).toBeGreaterThan(0);
+
+  for (const anchor of external) {
+    expect(allowedExternalUrls.has(anchor.href), `${label} unexpected outlink: ${anchor.href}`).toBe(true);
+    expect(anchor.className.split(/\s+/)).toContain('external-link');
+    expect(anchor.target, `${label} external link must preserve the current site`).toBe('_blank');
+    const rel = new Set(anchor.rel.split(/\s+/).filter(Boolean));
+    expect(rel.has('noopener'), `${label} external link must use noopener`).toBe(true);
+    expect(rel.has('noreferrer'), `${label} external link must use noreferrer`).toBe(true);
+    expect(anchor.indicatorText, `${label} external link must show the visual indicator`).toBe('↗');
+    expect(anchor.indicatorAriaHidden, `${label} visual indicator should not duplicate the assistive notification`).toBe('true');
+    expect(anchor.indicatorVisible, `${label} visual indicator must be visibly rendered`).toBe(true);
+    expect(anchor.noteText, `${label} external link must provide an accessible new-context notification`).toMatch(/opens in a new tab or window/i);
+  }
+
+  const sourceLinks = external.filter(anchor => anchor.href === sourceUrl);
+  expect(sourceLinks, `${label} should contain exactly one secondary source outlink`).toHaveLength(1);
 }
 
 for (const route of routes) {
@@ -67,10 +117,12 @@ for (const route of routes) {
     }
 
     await assertNoHorizontalOverflow(page, `${testInfo.project.name} ${route}`);
+    await assertOutlinkContract(page, `${testInfo.project.name} ${route}`);
     await assertA11y(page, `${testInfo.project.name} ${route} light/system`);
 
     await page.emulateMedia({ colorScheme: 'dark' });
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('data-effective-theme', 'dark');
+    await assertOutlinkContract(page, `${testInfo.project.name} ${route} dark/system`);
     await assertA11y(page, `${testInfo.project.name} ${route} dark/system`);
 
     expect(pageErrors, `${route} page errors`).toEqual([]);
@@ -88,6 +140,7 @@ test('primary user journeys stay on the friendly site', async ({ page }) => {
 
   const download = page.getByRole('link', { name: new RegExp(`Download ${stable.artifact.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) });
   await expect(download).toHaveAttribute('href', stable.artifact.download_url);
+  await expect(download).toHaveAttribute('target', '_blank');
   expect(stable.artifact.download_url).toContain('/releases/download/');
 
   await page.getByRole('link', { name: 'Supported versions' }).click();
@@ -131,6 +184,7 @@ test('320px reflow keeps navigation and primary controls usable', async ({ page 
     await page.goto(routeUrl(route), { waitUntil: 'networkidle' });
     assertExpectedSite(page, `320px ${route}`);
     await assertNoHorizontalOverflow(page, `320px ${route}`);
+    await assertOutlinkContract(page, `320px ${route}`);
     const navLinks = page.locator('nav[aria-label="Primary"] a');
     for (let index = 0; index < await navLinks.count(); index += 1) {
       await expect(navLinks.nth(index)).toBeVisible();

@@ -80,6 +80,7 @@ a:focus-visible, button:focus-visible, select:focus-visible, [tabindex]:focus-vi
   outline-offset: 3px;
   border-radius: 4px;
 }
+.external-link-indicator { display: inline-block; margin-left: .22em; font-size: .84em; font-weight: 800; line-height: 1; }
 .shell { width: min(1120px, 100%); margin-inline: auto; padding-inline: 24px; }
 .skip-link {
   position: fixed;
@@ -164,4 +165,5 @@ th { font-weight: 760; }
 @media (forced-colors: active) {
   .button, .theme-control select, .table-scroll { border: 1px solid CanvasText; }
   .status-dot { forced-color-adjust: none; background: CanvasText; }
+  .external-link-indicator { forced-color-adjust: auto; }
 }

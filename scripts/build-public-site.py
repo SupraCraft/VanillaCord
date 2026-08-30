@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
+SOURCE_URL = "https://github.com/SupraCraft/VanillaCord"
 
 
 def load(path):
@@ -27,6 +28,18 @@ def write(path, value):
     path.write_text(value, encoding="utf-8")
 
 
+def external_link(url, label, css_class=""):
+    classes = " ".join(item for item in (css_class, "external-link") if item)
+    return (
+        f'<a class="{html.escape(classes, quote=True)}" '
+        f'href="{html.escape(url, quote=True)}" target="_blank" rel="noopener noreferrer">'
+        f'{html.escape(label)} '
+        '<span class="external-link-indicator" aria-hidden="true">↗</span>'
+        '<span class="sr-only"> (opens in a new tab or window)</span>'
+        '</a>'
+    )
+
+
 def primary_nav(base, active):
     items = [
         ("download", "Download", "download/"),
@@ -38,7 +51,6 @@ def primary_nav(base, active):
     for key, label, route in items:
         current = ' aria-current="page"' if active == key else ""
         links.append(f'<a href="{base}/{route}"{current}>{label}</a>')
-    links.append('<a href="https://github.com/SupraCraft/VanillaCord">Source</a>')
     return "".join(links)
 
 
@@ -53,6 +65,7 @@ def shell(title, description, body, base, canonical_base, active):
     canonical = canonical_base + "/" + canonical_route
     brand_current = ' aria-current="page"' if active == "home" else ""
     accessibility_current = ' aria-current="page"' if active == "accessibility" else ""
+    source = external_link(SOURCE_URL, "Source")
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -71,7 +84,7 @@ def shell(title, description, body, base, canonical_base, active):
 <a class="skip-link" href="#main-content">Skip to main content</a>
 <header class="site-header"><div class="shell"><nav class="site-nav" aria-label="Primary"><a class="brand" href="{base}/"{brand_current}><img class="brand-mark" src="{base}/assets/brand/icon.svg" alt="" aria-hidden="true"><span>VanillaCord</span></a><div class="nav-cluster"><div class="nav-links">{primary_nav(base, active)}</div><label class="theme-control" for="theme-select"><span>Theme</span><select id="theme-select" aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div></nav></div></header>
 <main id="main-content" class="shell" tabindex="-1">{body}</main>
-<footer class="site-footer"><div class="shell footer-row"><span>VanillaCord · SupraCraft · MPL-2.0</span><a href="{base}/accessibility/"{accessibility_current}>Accessibility</a></div></footer>
+<footer class="site-footer"><div class="shell footer-row"><span>VanillaCord · SupraCraft · MPL-2.0</span><span><a href="{base}/accessibility/"{accessibility_current}>Accessibility</a> · {source}</span></div></footer>
 </body>
 </html>'''
 
@@ -113,7 +126,8 @@ def release_html(release, supported, base, canonical_base):
     checksum = artifact.get("sha256") or "See release checksums"
     bridge = f'<p><strong>Bridge:</strong> <code>{html.escape(release["bridge_version"])}</code></p>' if release.get("bridge_version") else ""
     table = support_table_html(supported, release.get("minecraft_support", []), f"Minecraft qualification for VanillaCord {version}")
-    body = f'''<div class="eyebrow">Stable release</div><h1>VanillaCord {html.escape(version)}</h1><p>{html.escape(release.get("summary", "Stable VanillaCord release."))}</p><div class="card"><h2>Download</h2><p><a class="button primary" href="{html.escape(artifact["download_url"], quote=True)}">Download {html.escape(artifact["name"])}</a></p><p class="quiet">SHA-256: <code>{html.escape(checksum)}</code></p>{bridge}</div><h2>Supported Minecraft releases</h2><p>Supported means this release patched the Mojang server, produced a readable JAR, and booted it on the listed Java runtime during stable qualification.</p>{table}<div class="card"><h2>Automation</h2><div class="link-list"><a href="{base}/releases/stable.json">stable.json</a><a href="{base}/releases/stable.txt">stable.txt</a><a href="{base}/releases/stable-url.txt">stable-url.txt</a></div></div>'''
+    download = external_link(artifact["download_url"], f'Download {artifact["name"]}', "button primary")
+    body = f'''<div class="eyebrow">Stable release</div><h1>VanillaCord {html.escape(version)}</h1><p>{html.escape(release.get("summary", "Stable VanillaCord release."))}</p><div class="card"><h2>Download</h2><p>{download}</p><p class="quiet">SHA-256: <code>{html.escape(checksum)}</code></p>{bridge}</div><h2>Supported Minecraft releases</h2><p>Supported means this release patched the Mojang server, produced a readable JAR, and booted it on the listed Java runtime during stable qualification.</p>{table}<div class="card"><h2>Automation</h2><div class="link-list"><a href="{base}/releases/stable.json">stable.json</a><a href="{base}/releases/stable.txt">stable.txt</a><a href="{base}/releases/stable-url.txt">stable-url.txt</a></div></div>'''
     return shell(
         f"Release {version}",
         f"VanillaCord {version} release downloads, checksums, and Minecraft compatibility evidence.",
@@ -189,7 +203,8 @@ def main():
     artifact = stable["artifact"]
     version = stable["version"]
     checksum = artifact.get("sha256") or "See release checksums"
-    download_body = f'''<div class="eyebrow">Current stable</div><h1>Download VanillaCord {html.escape(version)}</h1><p>For most server operators, this is the release to use.</p><div class="card"><h2>Stable JAR</h2><div class="actions"><a class="button primary" href="{html.escape(artifact["download_url"], quote=True)}">Download {html.escape(artifact["name"])}</a><a class="button" href="{base}/releases/{html.escape(version)}/">Release details</a></div><p class="quiet">SHA-256: <code>{html.escape(checksum)}</code></p></div><h2>Run the patcher</h2><pre><code>java -jar {html.escape(artifact["name"])} &lt;minecraft-version&gt;</code></pre><p>Patched servers are written under <code>out/</code>. Check the <a href="{base}/support/">supported-version matrix</a> for the target runtime, then continue with the <a href="{base}/guide/">setup guide</a>.</p><div class="notice"><strong>Security:</strong> proxy forwarding changes how backend identity is trusted. Firewall the backend server so players cannot connect around the proxy.</div>'''
+    download = external_link(artifact["download_url"], f'Download {artifact["name"]}', "button primary")
+    download_body = f'''<div class="eyebrow">Current stable</div><h1>Download VanillaCord {html.escape(version)}</h1><p>For most server operators, this is the release to use.</p><div class="card"><h2>Stable JAR</h2><div class="actions">{download}<a class="button" href="{base}/releases/{html.escape(version)}/">Release details</a></div><p class="quiet">SHA-256: <code>{html.escape(checksum)}</code></p></div><h2>Run the patcher</h2><pre><code>java -jar {html.escape(artifact["name"])} &lt;minecraft-version&gt;</code></pre><p>Patched servers are written under <code>out/</code>. Check the <a href="{base}/support/">supported-version matrix</a> for the target runtime, then continue with the <a href="{base}/guide/">setup guide</a>.</p><div class="notice"><strong>Security:</strong> proxy forwarding changes how backend identity is trusted. Firewall the backend server so players cannot connect around the proxy.</div>'''
     write(output / "download/index.html", shell("Download", f"Download the current stable VanillaCord release {version}, checksum, and release details.", download_body, base, canonical_base, "download"))
 
     current_target = next((target for target in supported["targets"] if target.get("current")), supported["targets"][0])
@@ -209,10 +224,10 @@ def main():
         write(release_dir / "index.html", release_html(release, supported, base, canonical_base))
         suffix = " — current stable" if release["version"] == version else ""
         links.append(f'<li><a href="{base}/releases/{html.escape(release["version"])}/">VanillaCord {html.escape(release["version"])}</a>{suffix}</li>')
-    releases_body = '<div class="eyebrow">Release history</div><h1>VanillaCord releases</h1><ul>' + "".join(links) + '</ul><p>GitHub remains the developer/source record; normal operator download and information flows stay on this site.</p>'
+    releases_body = '<div class="eyebrow">Release history</div><h1>VanillaCord releases</h1><ul>' + "".join(links) + '</ul><p>GitHub remains the developer/source record; normal operator download and information flows stay on this site. Use the secondary Source link in the footer when repository access is actually needed.</p>'
     write(output / "releases/index.html", shell("Releases", "Browse VanillaCord release information and the current stable release.", releases_body, base, canonical_base, "releases"))
 
-    accessibility_body = f'''<div class="eyebrow">Inclusive access</div><h1>Accessibility</h1><p>VanillaCord’s public site targets <strong>WCAG 2.2 Level AA</strong> and is designed to align with Revised Section 508 web accessibility criteria where applicable.</p><h2>Features</h2><ul><li>Semantic page landmarks, a skip-to-content link, structured headings, and accessible table markup.</li><li>Keyboard-visible focus indicators and primary navigation that remains available at narrow and zoomed layouts.</li><li>A Light / Dark / System control. System follows the browser or operating-system color preference; an explicit choice is stored locally in this browser.</li><li>Reduced-motion and forced-colors support using platform preferences.</li></ul><h2>Testing</h2><p>Pull requests that change the public surface run deterministic route/link checks plus headless browser tests across desktop, 320-pixel reflow, light/dark preference handling, keyboard navigation, and automated WCAG A/AA checks. Automated tools cannot prove full accessibility or Section 508 conformance, so manual review remains part of release readiness for changes that materially alter interaction or content.</p><h2>Report a problem</h2><p>If something on this site is difficult to use with a keyboard, screen reader, zoom, high-contrast mode, or another assistive technology, use the <a href="https://github.com/SupraCraft/VanillaCord">project repository</a> to reach the currently available feedback or contribution channel. Include the affected page, browser/assistive technology if known, and what blocked you.</p>'''
+    accessibility_body = f'''<div class="eyebrow">Inclusive access</div><h1>Accessibility</h1><p>VanillaCord’s public site targets <strong>WCAG 2.2 Level AA</strong> and is designed to align with Revised Section 508 web accessibility criteria where applicable.</p><h2>Features</h2><ul><li>Semantic page landmarks, a skip-to-content link, structured headings, and accessible table markup.</li><li>Keyboard-visible focus indicators and primary navigation that remains available at narrow and zoomed layouts.</li><li>A Light / Dark / System control. System follows the browser or operating-system color preference; an explicit choice is stored locally in this browser.</li><li>Reduced-motion and forced-colors support using platform preferences.</li><li>External links use a visible ↗ indicator plus an assistive-technology notification and preserve this site in the current browsing context.</li></ul><h2>Testing</h2><p>Pull requests that change the public surface run deterministic route/link checks plus headless browser tests across desktop, 320-pixel reflow, light/dark preference handling, keyboard navigation, and automated WCAG A/AA checks. Automated tools cannot prove full accessibility or Section 508 conformance, so manual review remains part of release readiness for changes that materially alter interaction or content.</p><h2>Report a problem</h2><p>If something on this site is difficult to use with a keyboard, screen reader, zoom, high-contrast mode, or another assistive technology, use the secondary Source link in this page footer to reach the currently available project feedback or contribution channel. Include the affected page, browser/assistive technology if known, and what blocked you.</p>'''
     write(output / "accessibility/index.html", shell("Accessibility", "Accessibility features, testing target, and feedback path for the VanillaCord public site.", accessibility_body, base, canonical_base, "accessibility"))
 
     write(output / "llms.txt", f'''# VanillaCord\n\nCanonical human entry point: {base}/\nDownload: {base}/download/\nGuide: {base}/guide/\nSupported releases: {base}/support/\nAccessibility: {base}/accessibility/\nCurrent stable JSON: {base}/releases/stable.json\nCurrent stable version: {base}/releases/stable.txt\nCurrent stable artifact URL: {base}/releases/stable-url.txt\nSupport matrix JSON: {base}/support-matrix.json\nProject contract: {base}/project.json\nRepository: https://github.com/{contract['repository']}\nUpstream: https://github.com/{contract['upstream_repository']}\n\nPrefer these endpoints over scraping presentation HTML or GitHub release pages.\n''')

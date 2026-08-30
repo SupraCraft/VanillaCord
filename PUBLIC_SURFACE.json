@@ -1,0 +1,253 @@
+{
+  "schema": "public-surface-contract/1",
+  "production_base_url": "https://supracraft.github.io/VanillaCord/",
+  "entry_states": [
+    "home"
+  ],
+  "routes": [
+    {
+      "id": "home",
+      "path": "/",
+      "title": "VanillaCord — connect vanilla Minecraft servers to proxies",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "download",
+      "path": "/download/",
+      "title": "Download · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "support",
+      "path": "/support/",
+      "title": "Supported versions · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "guide",
+      "path": "/guide/",
+      "title": "Guide · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "releases",
+      "path": "/releases/",
+      "title": "Releases · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "release-2-8",
+      "path": "/releases/2.8/",
+      "title": "Release 2.8 · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
+      "id": "accessibility",
+      "path": "/accessibility/",
+      "title": "Accessibility · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    }
+  ],
+  "transitions": [
+    {
+      "from": "home",
+      "action": "home-download-primary",
+      "to": "download",
+      "required_rendered": true
+    },
+    {
+      "from": "home",
+      "action": "home-support-primary",
+      "to": "support",
+      "required_rendered": true
+    },
+    {
+      "from": "home",
+      "action": "home-download-card",
+      "to": "download",
+      "required_rendered": true
+    },
+    {
+      "from": "home",
+      "action": "home-support-card",
+      "to": "support",
+      "required_rendered": true
+    },
+    {
+      "from": "home",
+      "action": "home-guide-card",
+      "to": "guide",
+      "required_rendered": true
+    },
+    {
+      "from": "download",
+      "action": "download-release-detail",
+      "to": "release-2-8",
+      "required_rendered": true
+    },
+    {
+      "from": "download",
+      "action": "download-support",
+      "to": "support",
+      "required_rendered": true
+    },
+    {
+      "from": "download",
+      "action": "download-guide",
+      "to": "guide",
+      "required_rendered": true
+    },
+    {
+      "from": "guide",
+      "action": "guide-support",
+      "to": "support",
+      "required_rendered": true
+    },
+    {
+      "from": "guide",
+      "action": "guide-download",
+      "to": "download",
+      "required_rendered": true
+    },
+    {
+      "from": "support",
+      "action": "support-release-stable",
+      "to": "release-2-8",
+      "required_rendered": true
+    },
+    {
+      "from": "releases",
+      "action": "open-release-2-8",
+      "to": "release-2-8",
+      "required_rendered": true
+    }
+  ],
+  "navigation": [
+    {
+      "action": "skip-main",
+      "class": "utility",
+      "to": "$self"
+    },
+    {
+      "action": "nav-home",
+      "class": "global",
+      "to": "home"
+    },
+    {
+      "action": "nav-download",
+      "class": "global",
+      "to": "download"
+    },
+    {
+      "action": "nav-support",
+      "class": "global",
+      "to": "support"
+    },
+    {
+      "action": "nav-guide",
+      "class": "global",
+      "to": "guide"
+    },
+    {
+      "action": "nav-releases",
+      "class": "global",
+      "to": "releases"
+    },
+    {
+      "action": "nav-accessibility",
+      "class": "global",
+      "to": "accessibility"
+    }
+  ],
+  "resources": [
+    {
+      "action": "machine-stable-json",
+      "path": "/releases/stable.json",
+      "required_on": ["home", "guide", "release-2-8"]
+    },
+    {
+      "action": "machine-stable-text",
+      "path": "/releases/stable.txt",
+      "required_on": ["home", "release-2-8"]
+    },
+    {
+      "action": "machine-stable-url",
+      "path": "/releases/stable-url.txt",
+      "required_on": ["home", "release-2-8"]
+    },
+    {
+      "action": "machine-stable-sha256",
+      "path": "/releases/stable-sha256.txt",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-support-matrix",
+      "path": "/support-matrix.json",
+      "required_on": ["home", "guide", "support"]
+    },
+    {
+      "action": "machine-project",
+      "path": "/project.json",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-github",
+      "path": "/github.json",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-brand",
+      "path": "/brand.json",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-artifacts",
+      "path": "/artifacts.json",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-compatibility",
+      "path": "/compatibility.json",
+      "required_on": ["home"]
+    },
+    {
+      "action": "machine-llms",
+      "path": "/llms.txt",
+      "required_on": ["home"]
+    }
+  ],
+  "handoffs": [
+    {
+      "action": "view-source",
+      "handoff": "source",
+      "url": "https://github.com/SupraCraft/VanillaCord"
+    },
+    {
+      "action": "download-artifact",
+      "handoff": "artifact-download",
+      "url_prefix": "https://github.com/SupraCraft/VanillaCord/releases/download/"
+    }
+  ],
+  "discovery": {
+    "sitemap": "sitemap.xml",
+    "robots": {
+      "mode": "origin-external",
+      "url": "https://supracraft.github.io/robots.txt"
+    },
+    "machine_description": "surface.json"
+  }
+}

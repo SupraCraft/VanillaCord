@@ -39,32 +39,50 @@ async function assertKeyboardFocusPath(page, label) {
   const maxTabs = Math.max(24, expected * 3);
   for (let index = 0; index < maxTabs && seen.size < expected; index += 1) {
     await page.keyboard.press('Tab');
-    const focus = await page.evaluate(selector => {
+    const focused = await page.evaluate(selector => {
       const node = document.activeElement;
       if (!(node instanceof HTMLElement) || !node.matches(selector)) return { primary: false };
+
+      const text = (node.getAttribute('aria-label') || node.textContent || '').replace(/\s+/g, ' ').trim();
+      return {
+        primary: true,
+        identity: [node.tagName, node.getAttribute('href') || '', node.getAttribute('name') || '', node.getAttribute('value') || '', text].join('|'),
+      };
+    }, keyboardPrimarySelector);
+
+    if (!focused.primary) continue;
+
+    await expect.poll(async () => page.evaluate(selector => {
+      const node = document.activeElement;
+      if (!(node instanceof HTMLElement) || !node.matches(selector)) return false;
 
       const rect = node.getBoundingClientRect();
       const left = Math.max(rect.left, 0);
       const right = Math.min(rect.right, innerWidth);
       const topEdge = Math.max(rect.top, 0);
       const bottom = Math.min(rect.bottom, innerHeight);
-      const inViewport = right > left && bottom > topEdge;
-      const x = inViewport ? (left + right) / 2 : 0;
-      const y = inViewport ? (topEdge + bottom) / 2 : 0;
-      const top = inViewport ? document.elementFromPoint(x, y) : null;
-      const text = (node.getAttribute('aria-label') || node.textContent || '').replace(/\s+/g, ' ').trim();
-      return {
-        primary: true,
-        identity: [node.tagName, node.getAttribute('href') || '', node.getAttribute('name') || '', node.getAttribute('value') || '', text].join('|'),
-        inViewport,
-        coveredAtVisibleCenter: Boolean(top && top !== node && !node.contains(top) && !top.contains(node)),
-      };
+      return right > left && bottom > topEdge;
+    }, keyboardPrimarySelector), {
+      message: `${label} keyboard-focused ${focused.identity} must be visible in the viewport`,
+    }).toBe(true);
+
+    const coveredAtVisibleCenter = await page.evaluate(selector => {
+      const node = document.activeElement;
+      if (!(node instanceof HTMLElement) || !node.matches(selector)) return true;
+
+      const rect = node.getBoundingClientRect();
+      const left = Math.max(rect.left, 0);
+      const right = Math.min(rect.right, innerWidth);
+      const topEdge = Math.max(rect.top, 0);
+      const bottom = Math.min(rect.bottom, innerHeight);
+      const x = (left + right) / 2;
+      const y = (topEdge + bottom) / 2;
+      const top = document.elementFromPoint(x, y);
+      return Boolean(top && top !== node && !node.contains(top) && !top.contains(node));
     }, keyboardPrimarySelector);
 
-    if (!focus.primary) continue;
-    expect(focus.inViewport, `${label} keyboard-focused ${focus.identity} must be visible in the viewport`).toBe(true);
-    expect(focus.coveredAtVisibleCenter, `${label} keyboard-focused ${focus.identity} must not be obscured at its visible center`).toBe(false);
-    seen.add(focus.identity);
+    expect(coveredAtVisibleCenter, `${label} keyboard-focused ${focused.identity} must not be obscured at its visible center`).toBe(false);
+    seen.add(focused.identity);
   }
 
   expect(seen.size, `${label} keyboard traversal should reach every declared primary tab stop`).toBe(expected);

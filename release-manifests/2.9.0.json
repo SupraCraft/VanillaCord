@@ -1,0 +1,36 @@
+{
+  "schema": "vanillacord-published-release/1",
+  "version": "2.9.0",
+  "tag": "v2.9.0",
+  "channel": "stable",
+  "published_at": "2026-08-30T09:51:47Z",
+  "release_url": "https://github.com/SupraCraft/VanillaCord/releases/tag/v2.9.0",
+  "info_url": "https://supracraft.github.io/VanillaCord/releases/2.9.0/",
+  "artifact": {
+    "name": "supracraft-vanillacord-2.9.0.jar",
+    "download_url": "https://github.com/SupraCraft/VanillaCord/releases/download/v2.9.0/supracraft-vanillacord-2.9.0.jar",
+    "sha256": "24e850a261dbf108e2f7ac412c34651ffae753543665ec47d5e40ff9c8981719"
+  },
+  "legacy_naming": false,
+  "bridge_version": "0.1.0",
+  "minecraft_support": [
+    {"version": "26.2", "status": "pass"},
+    {"version": "1.21.11", "status": "pass"},
+    {"version": "1.20.6", "status": "pass"},
+    {"version": "1.20.4", "status": "pass"},
+    {"version": "1.19.4", "status": "pass"},
+    {"version": "1.18.2", "status": "pass"},
+    {"version": "1.17.1", "status": "pass"},
+    {"version": "1.16.5", "status": "pass"},
+    {"version": "1.15.2", "status": "pass"},
+    {"version": "1.14.4", "status": "pass"},
+    {"version": "1.13.2", "status": "pass"},
+    {"version": "1.12.2", "status": "pass"},
+    {"version": "1.11.2", "status": "pass"},
+    {"version": "1.10.2", "status": "pass"},
+    {"version": "1.9.4", "status": "pass"},
+    {"version": "1.8.9", "status": "pass"},
+    {"version": "1.7.10", "status": "pass"}
+  ],
+  "summary": "Stable SupraCraft VanillaCord 2.9.0, reproducibly built and fully qualified across every declared supported Minecraft generation before publication."
+}

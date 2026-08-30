@@ -1,0 +1,164 @@
+name: runtime-closure-diagnostic
+
+on:
+  push:
+    branches: ['diagnostics/2.9.0-runtime-closure']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: runtime-closure-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BRIDGE_OWNER: ${{ github.repository_owner }}
+  BRIDGE_VERSION: '0.1.0'
+  RELEASE_VERSION: '2.9.0'
+  RELEASE_SOURCE_SHA: 'c467c41e0a78b38340c7b6610e07242daaef18d1'
+  BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
+  BRIDGE_PACKAGES_TOKEN: ${{ secrets.BRIDGE_PACKAGES_TOKEN || github.token }}
+
+jobs:
+  diagnose:
+    name: Reproduce and inspect patched-server runtime closure
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout diagnostic revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - name: Verify diagnostic lineage
+        run: |
+          test "$(git merge-base HEAD "${RELEASE_SOURCE_SHA}")" = "${RELEASE_SOURCE_SHA}"
+          git show --no-patch --format='diagnostic=%H%nrelease-source=%P' HEAD
+          git show --no-patch --format='%H %s' "${RELEASE_SOURCE_SHA}"
+          python3 -m py_compile scripts/inspect-runtime-closure.py
+
+      - name: Set up JDK 21 and Maven package access
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          server-id: bridge-github
+          server-username: BRIDGE_PACKAGES_USERNAME
+          server-password: BRIDGE_PACKAGES_TOKEN
+
+      - name: Capture JDK 21
+        run: |
+          echo "VANILLACORD_JAVA_21_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+          echo "VANILLACORD_PATCHER_JAVA_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
+      - name: Build exact release-version candidate with Bridge 0.1.0
+        run: >-
+          ./mvnw -B verify
+          -Dbridge.owner=${BRIDGE_OWNER}
+          -Dbridge.version=${BRIDGE_VERSION}
+          -Dbuild.commit=${RELEASE_SOURCE_SHA}
+          -Dbuild.ref=refs/heads/stable/${RELEASE_VERSION}
+          -Dbuild.number=diagnostic
+
+      - name: Inspect transformed build output and VanillaCord candidate
+        run: |
+          mkdir -p diagnostic/extracted
+          python3 scripts/inspect-runtime-closure.py \
+            build "artifacts/supracraft-vanillacord-${RELEASE_VERSION}.jar" \
+            --label compiled-and-candidate \
+            --json diagnostic/compiled-and-candidate.json \
+            --extract-matches diagnostic/extracted/compiled
+
+      - name: Patch passing and failing reference targets
+        run: |
+          rm -f out/1.21.11.jar out/1.20.4.jar
+          "${VANILLACORD_JAVA_21_HOME}/bin/java" -jar "artifacts/supracraft-vanillacord-${RELEASE_VERSION}.jar" 1.21.11 | tee diagnostic/patch-1.21.11.log
+          test -s out/1.21.11.jar
+          "${VANILLACORD_JAVA_21_HOME}/bin/java" -jar "artifacts/supracraft-vanillacord-${RELEASE_VERSION}.jar" 1.20.4 | tee diagnostic/patch-1.20.4.log
+          test -s out/1.20.4.jar
+
+      - name: Inspect patched server JARs independently
+        run: |
+          python3 scripts/inspect-runtime-closure.py out/1.21.11.jar \
+            --label minecraft-1.21.11 \
+            --json diagnostic/minecraft-1.21.11.json \
+            --extract-matches diagnostic/extracted/1.21.11
+          python3 scripts/inspect-runtime-closure.py out/1.20.4.jar \
+            --label minecraft-1.20.4 \
+            --json diagnostic/minecraft-1.20.4.json \
+            --extract-matches diagnostic/extracted/1.20.4
+
+      - name: Set up JDK 17 for 1.20.4 runtime
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Capture JDK 17
+        run: echo "VANILLACORD_JAVA_17_HOME=${JAVA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Reproduce boot behavior without changing release verdict
+        run: |
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+
+          path = pathlib.Path('scripts/run-supported-matrix.py')
+          spec = importlib.util.spec_from_file_location('supported_matrix', path)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          cases = [
+              ('1.21.11', pathlib.Path(os.environ['VANILLACORD_JAVA_21_HOME']) / 'bin' / 'java'),
+              ('1.20.4', pathlib.Path(os.environ['VANILLACORD_JAVA_17_HOME']) / 'bin' / 'java'),
+          ]
+          results = []
+          for version, java in cases:
+              ok, tail, returncode = module.boot_smoke(java, pathlib.Path('out') / f'{version}.jar', 120)
+              item = {
+                  'version': version,
+                  'java': str(java),
+                  'boot': 'pass' if ok else 'fail',
+                  'returncode': returncode,
+                  'log_tail': tail,
+              }
+              results.append(item)
+              print(f"BOOT {version}: {item['boot']} rc={returncode}")
+              if tail:
+                  print(tail)
+          pathlib.Path('diagnostic/boot-results.json').write_text(
+              json.dumps({'schema': 'vanillacord-runtime-closure-boots/1', 'results': results}, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          PY
+
+      - name: Summarize Bridge closure difference
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          for name in ('compiled-and-candidate', 'minecraft-1.21.11', 'minecraft-1.20.4'):
+              data = json.loads(pathlib.Path(f'diagnostic/{name}.json').read_text(encoding='utf-8'))
+              print(f"=== {name} ===")
+              print(json.dumps(data['summary'], indent=2))
+              for item in data['matches']:
+                  print('REF', item['location'], ','.join(item['tokens']))
+              for item in data['runtimeClassesPresent']:
+                  print('CLASS', item)
+          PY
+          sha256sum "artifacts/supracraft-vanillacord-${RELEASE_VERSION}.jar" out/1.21.11.jar out/1.20.4.jar | tee diagnostic/SHA256SUMS
+
+      - name: Upload runtime-closure evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: runtime-closure-2.9.0-${{ github.run_number }}
+          path: diagnostic/**
+          if-no-files-found: error
+          retention-days: 30

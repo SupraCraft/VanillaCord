@@ -46,6 +46,14 @@
       "terminal": false
     },
     {
+      "id": "release-2-9-0",
+      "path": "/releases/2.9.0/",
+      "title": "Release 2.9.0 · VanillaCord",
+      "indexable": true,
+      "required": true,
+      "terminal": false
+    },
+    {
       "id": "release-2-8",
       "path": "/releases/2.8/",
       "title": "Release 2.8 · VanillaCord",
@@ -96,7 +104,7 @@
     {
       "from": "download",
       "action": "download-release-detail",
-      "to": "release-2-8",
+      "to": "release-2-9-0",
       "required_rendered": true
     },
     {
@@ -126,7 +134,13 @@
     {
       "from": "support",
       "action": "support-release-stable",
-      "to": "release-2-8",
+      "to": "release-2-9-0",
+      "required_rendered": true
+    },
+    {
+      "from": "releases",
+      "action": "open-release-2-9-0",
+      "to": "release-2-9-0",
       "required_rendered": true
     },
     {
@@ -177,17 +191,17 @@
     {
       "action": "machine-stable-json",
       "path": "/releases/stable.json",
-      "required_on": ["home", "guide", "release-2-8"]
+      "required_on": ["home", "guide", "release-2-9-0", "release-2-8"]
     },
     {
       "action": "machine-stable-text",
       "path": "/releases/stable.txt",
-      "required_on": ["home", "release-2-8"]
+      "required_on": ["home", "release-2-9-0", "release-2-8"]
     },
     {
       "action": "machine-stable-url",
       "path": "/releases/stable-url.txt",
-      "required_on": ["home", "release-2-8"]
+      "required_on": ["home", "release-2-9-0", "release-2-8"]
     },
     {
       "action": "machine-stable-sha256",

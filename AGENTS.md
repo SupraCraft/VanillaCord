@@ -32,7 +32,7 @@ This repository is the SupraCraft-maintained fork of `ME1312/VanillaCord`. Prese
 - use the repository Maven Wrapper only: `./mvnw` or `mvnw.cmd`
 - wrapper version: 3.3.4
 - Maven version: 3.9.16
-- build/patcher bytecode: Java 21 (`maven.compiler.release=21`)
+- build/patcher bytecode: Java 21 (`tooling.compiler.release=21`)
 - classes under `vanillacord.server` that are injected into patched Minecraft servers: Java 8 (`server.runtime.compiler.release=8`), because the declared stable support matrix includes Java 8 server generations
 - Bridge transformation runs after compilation and must preserve that injected-runtime bytecode ceiling
 - generated `vanillacord.translation` runtime classes must remain Java 8 compatible

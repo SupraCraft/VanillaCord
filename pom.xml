@@ -88,7 +88,7 @@
                         <phase>compile</phase>
                         <goals><goal>compile</goal></goals>
                         <configuration combine.self="override">
-                            <!-- Intentionally use source/target rather than --release. These helpers are
+                            <!-- Intentionally use source/target rather than the release flag. These helpers are
                                  compiled against current Minecraft fixtures, then Updater rewrites
                                  target-specific APIs. The emitted classfile ceiling is enforced below
                                  and again against every declared runtime in the supported matrix. -->

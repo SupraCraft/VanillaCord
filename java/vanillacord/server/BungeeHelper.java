@@ -11,6 +11,8 @@ import io.netty.util.AttributeKey;
 import vanillacord.translation.HandshakePacket;
 import vanillacord.translation.PlayerConnection;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -18,8 +20,10 @@ import java.util.UUID;
 @SuppressWarnings({"AssignmentUsedAsCondition", "SpellCheckingInspection"})
 public class BungeeHelper extends ForwardingHelper {
     private static final Gson GSON = new Gson();
-    private static final AttributeKey<UUID> UUID_KEY = AttributeKey.valueOf("-vch-uuid");
-    private static final AttributeKey<Property[]> PROPERTIES_KEY = AttributeKey.valueOf("-vch-properties");
+    private static final Method PROPERTY_NAME = propertyAccessor("name", "getName");
+    private static final Method PROPERTY_VALUE = propertyAccessor("value", "getValue");
+    private static final AttributeKey<UUID> UUID_KEY = attributeKey("-vch-uuid");
+    private static final AttributeKey<Property[]> PROPERTIES_KEY = attributeKey("-vch-properties");
     private final String[] seecrets;
 
     BungeeHelper() {
@@ -55,8 +59,8 @@ public class BungeeHelper extends ForwardingHelper {
                     boolean invalid = true;
                     final Property[] modified = new Property[length = properties.length - 1];
                     for (Property property : properties) {
-                        if ("bungeeguard-token".equals(property.name())) {
-                            if (invalid = !invalid || Arrays.binarySearch(seecrets, property.value()) < 0) {
+                        if ("bungeeguard-token".equals(propertyName(property))) {
+                            if (invalid = !invalid || Arrays.binarySearch(seecrets, propertyValue(property)) < 0) {
                                 break;
                             }
                         } else if (i != length) {
@@ -85,12 +89,55 @@ public class BungeeHelper extends ForwardingHelper {
             Multimap<String, Property> props = ArrayListMultimap.create();
             if (properties != null) {
                 for (Property property : properties) {
-                    props.put(property.name(), property);
+                    props.put(propertyName(property), property);
                 }
             }
             return ForwardingHelper.createProfile(uuid, username, props);
         } catch (Exception e) {
             throw QuietException.show(e);
+        }
+    }
+
+    private static Method propertyAccessor(String modern, String historical) {
+        try {
+            return Property.class.getMethod(modern);
+        } catch (NoSuchMethodException ignored) {
+            try {
+                return Property.class.getMethod(historical);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Unsupported authlib Property API", e);
+            }
+        }
+    }
+
+    private static String propertyName(Property property) {
+        return invokePropertyAccessor(PROPERTY_NAME, property);
+    }
+
+    private static String propertyValue(Property property) {
+        return invokePropertyAccessor(PROPERTY_VALUE, property);
+    }
+
+    private static String invokePropertyAccessor(Method accessor, Property property) {
+        try {
+            return (String) accessor.invoke(property);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to read authlib Property", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> AttributeKey<T> attributeKey(String name) {
+        try {
+            try {
+                Method valueOf = AttributeKey.class.getMethod("valueOf", String.class);
+                return (AttributeKey<T>) valueOf.invoke(null, name);
+            } catch (NoSuchMethodException ignored) {
+                Constructor<AttributeKey> constructor = AttributeKey.class.getConstructor(String.class);
+                return (AttributeKey<T>) constructor.newInstance(name);
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unsupported Netty AttributeKey API", e);
         }
     }
 }

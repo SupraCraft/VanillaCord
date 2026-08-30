@@ -8,6 +8,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ final class VelocityForwardingParser {
         for (String secret : secrets) {
             encoded.add(secret.getBytes(UTF_8));
         }
-        this.secrets = encoded.toArray(byte[][]::new);
+        this.secrets = encoded.toArray(new byte[encoded.size()][]);
     }
 
     ForwardedPlayerData parse(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -41,7 +42,12 @@ final class VelocityForwardingParser {
             properties.add(new ForwardedProperty(propertyName, propertyValue, propertySignature));
         }
 
-        return new ForwardedPlayerData(address, playerId, playerName, List.copyOf(properties));
+        return new ForwardedPlayerData(
+                address,
+                playerId,
+                playerName,
+                Collections.unmodifiableList(new ArrayList<>(properties))
+        );
     }
 
     private boolean invalidSignature(ByteBuf data) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -90,13 +96,57 @@ final class VelocityForwardingParser {
         return out;
     }
 
-    record ForwardedProperty(String name, String value, String signature) {
+    static final class ForwardedProperty {
+        private final String name;
+        private final String value;
+        private final String signature;
+
+        ForwardedProperty(String name, String value, String signature) {
+            this.name = name;
+            this.value = value;
+            this.signature = signature;
+        }
+
+        String name() {
+            return name;
+        }
+
+        String value() {
+            return value;
+        }
+
+        String signature() {
+            return signature;
+        }
     }
 
-    record ForwardedPlayerData(
-            String address,
-            UUID playerId,
-            String playerName,
-            List<ForwardedProperty> properties) {
+    static final class ForwardedPlayerData {
+        private final String address;
+        private final UUID playerId;
+        private final String playerName;
+        private final List<ForwardedProperty> properties;
+
+        ForwardedPlayerData(String address, UUID playerId, String playerName, List<ForwardedProperty> properties) {
+            this.address = address;
+            this.playerId = playerId;
+            this.playerName = playerName;
+            this.properties = properties;
+        }
+
+        String address() {
+            return address;
+        }
+
+        UUID playerId() {
+            return playerId;
+        }
+
+        String playerName() {
+            return playerName;
+        }
+
+        List<ForwardedProperty> properties() {
+            return properties;
+        }
     }
 }

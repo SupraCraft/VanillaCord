@@ -176,6 +176,14 @@ public final class Patcher {
 
             if (file.sources.receive != null) { // 1.13+
                 updater.update("vanillacord/server/VelocityHelper.class", zos, buffer);
+
+                zos.putNextEntry(new ZipEntry("vanillacord/server/VelocityForwardingParser.class"));
+                copy(vccl.getResourceAsStream("vanillacord/server/VelocityForwardingParser.class"), zos, buffer);
+                zos.putNextEntry(new ZipEntry("vanillacord/server/VelocityForwardingParser$ForwardedProperty.class"));
+                copy(vccl.getResourceAsStream("vanillacord/server/VelocityForwardingParser$ForwardedProperty.class"), zos, buffer);
+                zos.putNextEntry(new ZipEntry("vanillacord/server/VelocityForwardingParser$ForwardedPlayerData.class"));
+                copy(vccl.getResourceAsStream("vanillacord/server/VelocityForwardingParser$ForwardedPlayerData.class"), zos, buffer);
+
                 vanillacord.translation.LoginListener.translate(file, zos);
                 vanillacord.translation.LoginExtension.translate(file, zos);
                 vanillacord.translation.NamespacedKey.translate(file, zos);

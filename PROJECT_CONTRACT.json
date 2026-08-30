@@ -31,6 +31,7 @@
     "maven_wrapper": "3.3.4",
     "maven": "3.9.16",
     "java_bytecode_release": 21,
+    "injected_server_bytecode_release": 8,
     "current_minecraft_probe_jdk": 25
   },
   "bridge": {
@@ -58,7 +59,7 @@
     "workflow": ".github/workflows/stable-release.yml",
     "supported_minecraft": "SUPPORTED_MINECRAFT.json",
     "supported_matrix_gate": "scripts/run-supported-matrix.py",
-    "publication_policy": "publish only after reproducibility, artifact, exact Bridge, and all declared Minecraft patch+boot gates pass"
+    "publication_policy": "publish only after reproducibility, artifact, exact Bridge, complete patched runtime closure, target-Java classfile compatibility, and all declared Minecraft patch+boot gates pass"
   },
   "validation": {
     "build": "./mvnw -B verify",
@@ -66,6 +67,7 @@
     "reproducibility": "scripts/verify-reproducible-build.sh",
     "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
     "supported_minecraft_matrix": "scripts/run-supported-matrix.py",
+    "injected_runtime_bytecode_test": "test/java/vanillacord/server/InjectedRuntimeBytecodeTest.java",
     "bridge_consumer_qualification": ".github/workflows/compatibility.yml",
     "documentation_contract": "scripts/check-documentation-contract.sh",
     "release_bridge_input_policy": "scripts/check-release-bridge-policy.sh",

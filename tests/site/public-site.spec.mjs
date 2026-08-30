@@ -88,6 +88,22 @@ async function assertOutlinkContract(page, label) {
   expect(sourceLinks, `${label} should contain exactly one secondary source outlink`).toHaveLength(1);
 }
 
+async function assertThemeControl(page, label) {
+  const group = page.getByRole('group', { name: 'Theme' });
+  await expect(group, `${label} theme group`).toHaveCount(1);
+  await expect(page.locator('#theme-select'), `${label} enhanced select should be replaced`).toHaveCount(0);
+  for (const name of ['System', 'Light', 'Dark']) {
+    const radio = page.getByRole('radio', { name });
+    await expect(radio, `${label} ${name} radio`).toHaveCount(1);
+    const box = await radio.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    expect(box.width, `${label} ${name} target width`).toBeGreaterThanOrEqual(44);
+    expect(box.height, `${label} ${name} target height`).toBeGreaterThanOrEqual(44);
+  }
+}
+
 for (const route of routes) {
   test(`${route} is a complete accessible user page`, async ({ page }, testInfo) => {
     const consoleErrors = [];
@@ -106,7 +122,7 @@ for (const route of routes) {
     await expect(page.locator('main#main-content')).toHaveCount(1);
     await expect(page.locator('footer')).toHaveCount(1);
     await expect(page.locator('.brand .brand-mark')).toHaveCount(1);
-    await expect(page.locator('#theme-select')).toHaveCount(1);
+    await assertThemeControl(page, `${testInfo.project.name} ${route}`);
     await expect(page.locator('a.skip-link[href="#main-content"]')).toHaveCount(1);
     await expect(page.locator('[aria-current="page"]')).toHaveCount(1);
     await expect(page.locator('img:not([alt])')).toHaveCount(0);
@@ -153,29 +169,41 @@ test('primary user journeys stay on the friendly site', async ({ page }) => {
   await expect(page).toHaveURL(/\/guide\/$/);
 });
 
-test('theme System, Light, and Dark work and persist', async ({ page }) => {
+test('theme segmented radios support System, Light, Dark, persistence, keyboard, and focus tooltip', async ({ page }) => {
   await page.goto(routeUrl('/'));
   assertExpectedSite(page, 'theme test homepage');
   await page.evaluate(() => localStorage.removeItem('supracraft-theme'));
   await page.emulateMedia({ colorScheme: 'light' });
   await page.reload();
 
-  const selector = page.locator('#theme-select');
-  await expect(selector).toHaveValue('system');
+  await assertThemeControl(page, 'theme test');
+  const system = page.getByRole('radio', { name: 'System' });
+  const light = page.getByRole('radio', { name: 'Light' });
+  const dark = page.getByRole('radio', { name: 'Dark' });
+  await expect(system).toBeChecked();
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('data-effective-theme', 'light');
 
-  await selector.selectOption('dark');
+  await dark.check();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
-  await expect(selector).toHaveValue('dark');
+  await expect(dark).toBeChecked();
 
-  await selector.selectOption('light');
+  await light.check();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
-  await selector.selectOption('system');
+  await system.check();
   await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.+/);
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('data-effective-theme', 'dark');
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await system.focus();
+  const systemOption = page.locator('.theme-option').filter({ has: system });
+  await expect(systemOption.locator('.theme-tooltip')).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(light).toBeChecked();
+  await page.keyboard.press('ArrowRight');
+  await expect(dark).toBeChecked();
 });
 
 test('320px reflow keeps navigation and primary controls usable', async ({ page }) => {
@@ -185,11 +213,12 @@ test('320px reflow keeps navigation and primary controls usable', async ({ page 
     assertExpectedSite(page, `320px ${route}`);
     await assertNoHorizontalOverflow(page, `320px ${route}`);
     await assertOutlinkContract(page, `320px ${route}`);
+    await assertThemeControl(page, `320px ${route}`);
     const navLinks = page.locator('nav[aria-label="Primary"] a');
     for (let index = 0; index < await navLinks.count(); index += 1) {
       await expect(navLinks.nth(index)).toBeVisible();
     }
-    const primaryControls = page.locator('nav[aria-label="Primary"] a, #theme-select, a.button');
+    const primaryControls = page.locator('nav[aria-label="Primary"] a, .theme-option, a.button');
     const boxes = await primaryControls.evaluateAll(nodes => nodes.map(node => {
       const rect = node.getBoundingClientRect();
       return { width: rect.width, height: rect.height };

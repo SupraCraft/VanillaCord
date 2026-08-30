@@ -2,6 +2,7 @@
 """Patch and boot-smoke every declared supported Minecraft release."""
 
 import argparse
+import io
 import json
 import os
 import pathlib
@@ -14,6 +15,18 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
+COMMON_RUNTIME_CLASSES = {
+    "vanillacord/server/VanillaCord.class",
+    "vanillacord/server/QuietException.class",
+    "vanillacord/server/ForwardingHelper.class",
+    "vanillacord/server/BungeeHelper.class",
+}
+VELOCITY_RUNTIME_CLASSES = {
+    "vanillacord/server/VelocityHelper.class",
+    "vanillacord/server/VelocityForwardingParser.class",
+    "vanillacord/server/VelocityForwardingParser$ForwardedProperty.class",
+    "vanillacord/server/VelocityForwardingParser$ForwardedPlayerData.class",
+}
 
 
 def load_json(path: pathlib.Path):
@@ -52,6 +65,58 @@ def fetch_manifest(url: str):
     request = urllib.request.Request(url, headers={"User-Agent": "VanillaCord-supported-matrix/1"})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def velocity_supported(version: str) -> bool:
+    parts = version.split(".")
+    if parts and parts[0] == "1" and len(parts) >= 2 and parts[1].isdigit():
+        return int(parts[1]) >= 13
+    return True
+
+
+def collect_runtime_classfiles(server_jar: pathlib.Path):
+    """Collect VanillaCord runtime classes from legacy fat jars or modern bundled jars."""
+    classes = {}
+    with zipfile.ZipFile(server_jar) as outer:
+        for info in outer.infolist():
+            name = info.filename
+            if name.startswith("vanillacord/") and name.endswith(".class"):
+                classes[name] = outer.read(info)
+            elif name.startswith("META-INF/versions/") and name.endswith(".jar"):
+                with zipfile.ZipFile(io.BytesIO(outer.read(info))) as nested:
+                    for nested_info in nested.infolist():
+                        nested_name = nested_info.filename
+                        if nested_name.startswith("vanillacord/") and nested_name.endswith(".class"):
+                            classes[nested_name] = nested.read(nested_info)
+    return classes
+
+
+def validate_runtime_contract(server_jar: pathlib.Path, version: str, java_feature: int):
+    classes = collect_runtime_classfiles(server_jar)
+    required = set(COMMON_RUNTIME_CLASSES)
+    if velocity_supported(version):
+        required.update(VELOCITY_RUNTIME_CLASSES)
+
+    problems = []
+    missing = sorted(required - classes.keys())
+    if missing:
+        problems.append("missing injected runtime classes: " + ", ".join(missing))
+
+    max_major = java_feature + 44
+    incompatible = []
+    for name, data in sorted(classes.items()):
+        if not name.startswith("vanillacord/server/"):
+            continue
+        if len(data) < 8 or data[:4] != b"\xca\xfe\xba\xbe":
+            incompatible.append(f"{name}=invalid-classfile")
+            continue
+        major = int.from_bytes(data[6:8], "big")
+        if major > max_major:
+            incompatible.append(f"{name}=class-{major}>max-{max_major}")
+    if incompatible:
+        problems.append("runtime bytecode exceeds target Java: " + ", ".join(incompatible))
+
+    return problems
 
 
 def wait_for_boot(process, log_path: pathlib.Path, timeout_seconds: int):
@@ -224,6 +289,16 @@ def main():
             results.append(result)
             emit_failure_details(result)
             continue
+
+        runtime_problems = validate_runtime_contract(output, version, java_feature)
+        if runtime_problems:
+            result["jar"] = "fail"
+            result["boot"] = "not-run"
+            result["error"] = "; ".join(runtime_problems)
+            failures += 1
+            results.append(result)
+            emit_failure_details(result)
+            continue
         result["jar"] = "pass"
 
         java = require_java(java_feature)
@@ -263,7 +338,7 @@ def main():
         "",
         f"Stable-release gate: **{'PASS' if failures == 0 else 'FAIL'}**",
         "",
-        "Every listed release is blocking. A green result means VanillaCord patched the Mojang server, produced a readable JAR, and booted that patched server on the declared Java runtime.",
+        "Every listed release is blocking. A green result means VanillaCord patched the Mojang server, produced a readable JAR with a complete runtime helper closure compatible with the declared Java generation, and booted that patched server on the declared Java runtime.",
         "",
         "| State | Minecraft | Generation | Java | Patch | JAR | Boot |",
         "| --- | --- | --- | ---: | --- | --- | --- |",

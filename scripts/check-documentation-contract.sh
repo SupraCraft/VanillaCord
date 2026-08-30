@@ -202,7 +202,7 @@ def text(path):
     return node.text.strip()
 
 assert contract['source_version'] == text('m:version')
-assert int(contract['toolchain']['java_bytecode_release']) == int(text('m:properties/m:maven.compiler.release'))
+assert int(contract['toolchain']['java_bytecode_release']) == int(text('m:properties/m:tooling.compiler.release'))
 
 wrapper = Path('.mvn/wrapper/maven-wrapper.properties').read_text(encoding='utf-8')
 match = re.search(r'apache-maven-([0-9.]+)-bin', wrapper)

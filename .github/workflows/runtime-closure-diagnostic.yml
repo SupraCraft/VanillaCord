@@ -30,13 +30,14 @@ jobs:
       - name: Checkout diagnostic revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify diagnostic lineage
         run: |
           test "$(git merge-base HEAD "${RELEASE_SOURCE_SHA}")" = "${RELEASE_SOURCE_SHA}"
-          git show --no-patch --format='diagnostic=%H%nrelease-source=%P' HEAD
-          git show --no-patch --format='%H %s' "${RELEASE_SOURCE_SHA}"
+          git show --no-patch --format='diagnostic=%H%nparents=%P' HEAD
+          git show --no-patch --format='release-source=%H %s' "${RELEASE_SOURCE_SHA}"
           python3 -m py_compile scripts/inspect-runtime-closure.py
 
       - name: Set up JDK 21 and Maven package access

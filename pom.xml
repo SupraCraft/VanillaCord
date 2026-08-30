@@ -25,6 +25,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.outputTimestamp>2000-01-01T00:00:00Z</project.build.outputTimestamp>
         <maven.compiler.release>21</maven.compiler.release>
+        <server.runtime.compiler.release>8</server.runtime.compiler.release>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
         <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
@@ -68,7 +69,34 @@
         </resources>
         <plugins>
             <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>${maven.enforcer.plugin.version}</version><executions><execution><id>enforce-build-baseline</id><goals><goal>enforce</goal></goals><configuration><rules><requireMavenVersion><version>[3.9.0,4.0.0)</version></requireMavenVersion><requireJavaVersion><version>[21,)</version></requireJavaVersion></rules></configuration></execution></executions></plugin>
-            <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${maven.compiler.plugin.version}</version><configuration><release>${maven.compiler.release}</release><parameters>true</parameters></configuration></plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${maven.compiler.plugin.version}</version>
+                <configuration><release>${maven.compiler.release}</release><parameters>true</parameters></configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <release>${maven.compiler.release}</release>
+                            <excludes>
+                                <exclude>vanillacord/server/*.java</exclude>
+                                <exclude>vanillacord/server/**/*.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile-server-runtime</id>
+                        <phase>compile</phase>
+                        <goals><goal>compile</goal></goals>
+                        <configuration>
+                            <release>${server.runtime.compiler.release}</release>
+                            <includes>
+                                <include>vanillacord/server/*.java</include>
+                                <include>vanillacord/server/**/*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin><groupId>io.github.supracraft.bridge</groupId><artifactId>bridge-plugin</artifactId><version>${bridge.version}</version><executions><execution><goals><goal>bridge</goal></goals></execution></executions></plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId><artifactId>maven-assembly-plugin</artifactId><version>${maven.assembly.plugin.version}</version>

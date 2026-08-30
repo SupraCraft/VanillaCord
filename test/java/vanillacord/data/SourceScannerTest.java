@@ -83,6 +83,37 @@ class SourceScannerTest {
         assertEquals("strong", file.sources.login.name);
     }
 
+    @Test
+    void nettyHelloSignalCannotSeedLoginListener() {
+        StubPackage file = new StubPackage();
+        ClassWriter cw = newProbeClass("io/netty/handler/ssl/AbstractSniHandler");
+        addStringLdcMethod(cw, "nettyHello", "Unexpected hello packet");
+        cw.visitEnd();
+
+        scan(file, cw.toByteArray());
+
+        assertNull(file.sources.login, "Netty TLS diagnostics must not select the Minecraft login listener");
+    }
+
+    @Test
+    void nettyHelloSignalCannotOverwriteMinecraftLoginListener() {
+        StubPackage file = new StubPackage();
+
+        ClassWriter minecraft = newProbeClass("acl");
+        addStringLdcMethod(minecraft, "minecraftHello", "Unexpected hello packet");
+        minecraft.visitEnd();
+        scan(file, minecraft.toByteArray());
+
+        ClassWriter netty = newProbeClass("io/netty/handler/ssl/AbstractSniHandler");
+        addStringLdcMethod(netty, "nettyHello", "Unexpected hello packet");
+        netty.visitEnd();
+        scan(file, netty.toByteArray());
+
+        assertNotNull(file.sources.login);
+        assertEquals("minecraftHello", file.sources.login.name);
+        assertEquals("acl", file.sources.login.owner.clazz.type.getInternalName());
+    }
+
     private static byte[] buildProbeClass() {
         ClassWriter cw = newProbeClass();
 
@@ -100,8 +131,12 @@ class SourceScannerTest {
     }
 
     private static ClassWriter newProbeClass() {
+        return newProbeClass("vanillacord/test/Probe");
+    }
+
+    private static ClassWriter newProbeClass(String internalName) {
         ClassWriter cw = new ClassWriter(0);
-        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, "vanillacord/test/Probe", null, "java/lang/Object", null);
+        cw.visit(Opcodes.V21, Opcodes.ACC_PUBLIC, internalName, null, "java/lang/Object", null);
         return cw;
     }
 

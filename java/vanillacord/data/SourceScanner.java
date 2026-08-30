@@ -47,11 +47,11 @@ public class SourceScanner extends HierarchyScanner {
                         System.out.print("Found the dedicated server: ");
                         System.out.println(SourceScanner.super.name);
                         file.sources.startup = data;
-                    } else if (isStrongLoginHello(text)) {
+                    } else if (isLoginCandidateClass(SourceScanner.super.name) && isStrongLoginHello(text)) {
                         System.out.print("Found the login listener: ");
                         System.out.println(SourceScanner.super.name);
                         file.sources.login = data;
-                    } else if (file.sources.login == null && isWeakLoginHello(text)) {
+                    } else if (file.sources.login == null && isLoginCandidateClass(SourceScanner.super.name) && isWeakLoginHello(text)) {
                         System.out.print("Found the login listener (fallback): ");
                         System.out.println(SourceScanner.super.name);
                         file.sources.login = data;
@@ -72,6 +72,12 @@ public class SourceScanner extends HierarchyScanner {
                 super.visitLdcInsn(value);
             }
         };
+    }
+
+    private static boolean isLoginCandidateClass(String internalName) {
+        // Fat JAR generations bundle Netty classes whose TLS diagnostics can contain
+        // the same "unexpected hello" wording as Minecraft's login listener.
+        return internalName == null || !internalName.startsWith("io/netty/");
     }
 
     private static boolean isStrongLoginHello(String text) {

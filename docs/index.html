@@ -19,7 +19,7 @@
     <nav class="site-nav" aria-label="Primary">
       <a class="brand" href="./" aria-current="page"><img class="brand-mark" src="assets/brand/icon.svg" alt="" aria-hidden="true"><span>VanillaCord</span></a>
       <div class="nav-cluster">
-        <div class="nav-links"><a href="download/">Download</a><a href="support/">Supported versions</a><a href="guide/">Guide</a><a href="releases/">Releases</a><a href="https://github.com/SupraCraft/VanillaCord">Source</a></div>
+        <div class="nav-links"><a href="download/">Download</a><a href="support/">Supported versions</a><a href="guide/">Guide</a><a href="releases/">Releases</a></div>
         <label class="theme-control" for="theme-select"><span>Theme</span><select id="theme-select" aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
       </div>
     </nav>
@@ -31,8 +31,8 @@
   <section class="section"><h2>What VanillaCord does</h2><p>VanillaCord downloads the Mojang server JAR for the Minecraft version you select, patches it for proxy forwarding, and writes the patched server under <code>out/</code>. It is intended for vanilla backend servers; servers with their own forwarding implementation should use that implementation instead.</p></section>
   <section class="section"><h2>Release confidence</h2><p>Stable releases are built reproducibly, record the exact Bridge dependency, and must pass the declared Minecraft support matrix before publication. Each supported Minecraft generation is patched, its output JAR is checked, and the patched server is boot-smoked on the target Java runtime.</p></section>
   <section class="section machine"><h2>For scripts and automation</h2><p class="quiet">These endpoints are stable public interfaces; consumers should not scrape GitHub release pages.</p><div class="link-list"><a href="releases/stable.json">releases/stable.json</a><a href="releases/stable.txt">releases/stable.txt</a><a href="releases/stable-url.txt">releases/stable-url.txt</a><a href="releases/stable-sha256.txt">releases/stable-sha256.txt</a><a href="support-matrix.json">support-matrix.json</a><a href="project.json">project.json</a><a href="github.json">github.json</a><a href="brand.json">brand.json</a><a href="artifacts.json">artifacts.json</a><a href="compatibility.json">compatibility.json</a><a href="llms.txt">llms.txt</a></div></section>
-  <section class="section"><p class="quiet">VanillaCord is a SupraCraft-maintained fork of ME1312/VanillaCord. Upstream authorship and license history are preserved. Developer source and contribution material remain available from the <a href="https://github.com/SupraCraft/VanillaCord">GitHub repository</a>, while normal operator flows stay on this site.</p></section>
+  <section class="section"><p class="quiet">VanillaCord is a SupraCraft-maintained fork of ME1312/VanillaCord. Upstream authorship and license history are preserved. Normal operator flows stay on this site; developer source and contribution material are available through the secondary Source link in the footer.</p></section>
 </main>
-<footer class="site-footer"><div class="shell footer-row"><span>VanillaCord · SupraCraft · MPL-2.0</span><a href="accessibility/">Accessibility</a></div></footer>
+<footer class="site-footer"><div class="shell footer-row"><span>VanillaCord · SupraCraft · MPL-2.0</span><span><a href="accessibility/">Accessibility</a> · <a class="external-link" href="https://github.com/SupraCraft/VanillaCord" target="_blank" rel="noopener noreferrer">Source <span class="external-link-indicator" aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab or window)</span></a></span></div></footer>
 </body>
 </html>

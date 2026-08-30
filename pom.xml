@@ -87,8 +87,17 @@
                         <id>compile-server-runtime</id>
                         <phase>compile</phase>
                         <goals><goal>compile</goal></goals>
-                        <configuration>
-                            <release>${server.runtime.compiler.release}</release>
+                        <configuration combine.self="override">
+                            <!-- Intentionally use source/target rather than --release. These helpers are
+                                 compiled against current Minecraft fixtures, then Updater rewrites
+                                 target-specific APIs. The emitted classfile ceiling is enforced below
+                                 and again against every declared runtime in the supported matrix. -->
+                            <release></release>
+                            <source>${server.runtime.compiler.release}</source>
+                            <target>${server.runtime.compiler.release}</target>
+                            <parameters>true</parameters>
+                            <showWarnings>true</showWarnings>
+                            <compilerArgs><arg>-Xlint:-options</arg></compilerArgs>
                             <includes>
                                 <include>vanillacord/server/*.java</include>
                                 <include>vanillacord/server/**/*.java</include>

@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - 'PROJECT_CONTRACT.json'
+      - 'PUBLIC_SURFACE.json'
       - 'GITHUB_METADATA.json'
       - 'STABLE_RELEASE.json'
       - 'SUPPORTED_MINECRAFT.json'
@@ -22,6 +23,7 @@ on:
     branches: [master]
     paths:
       - 'PROJECT_CONTRACT.json'
+      - 'PUBLIC_SURFACE.json'
       - 'GITHUB_METADATA.json'
       - 'STABLE_RELEASE.json'
       - 'SUPPORTED_MINECRAFT.json'
@@ -61,6 +63,20 @@ jobs:
 
       - name: Validate deterministic candidate contract
         run: python3 ./scripts/check-public-site.py --site-dir build/public-site --navigation-base http://127.0.0.1:4173/
+
+      - name: Fetch pinned public-surface conformance validator
+        run: >-
+          curl -fsSL
+          https://raw.githubusercontent.com/SupraShellScripts/github-ops-lab/5af6889bf31a86352f20a5963ed18f4ceaa741d1/scripts/public-web/validate-surface-contract.py
+          -o build/validate-surface-contract.py
+
+      - name: Validate surface model and discovery
+        run: >-
+          python3 build/validate-surface-contract.py
+          --contract PUBLIC_SURFACE.json
+          --site-dir build/public-site
+          --navigation-base http://127.0.0.1:4173/
+          --evidence build/public-surface-conformance.json
 
       - name: Install web QA dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
@@ -104,6 +120,7 @@ jobs:
             build/playwright-report
             build/playwright-results
             build/lighthouse
+            build/public-surface-conformance.json
             lychee/out.md
           if-no-files-found: ignore
           retention-days: 14

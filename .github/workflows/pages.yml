@@ -14,6 +14,7 @@ on:
       - 'docs/**'
       - 'scripts/build-public-site.py'
       - 'scripts/check-public-site.py'
+      - 'scripts/public-web/validate-surface-contract.py'
       - 'package.json'
       - 'playwright.config.mjs'
       - 'lighthouserc.cjs'
@@ -86,15 +87,9 @@ jobs:
       - name: Validate built public site
         run: python3 ./scripts/check-public-site.py --site-dir build/public-site
 
-      - name: Fetch pinned public-surface conformance validator
-        run: >-
-          curl -fsSL
-          https://raw.githubusercontent.com/SupraShellScripts/github-ops-lab/5af6889bf31a86352f20a5963ed18f4ceaa741d1/scripts/public-web/validate-surface-contract.py
-          -o build/validate-surface-contract.py
-
       - name: Validate production surface model and discovery
         run: >-
-          python3 build/validate-surface-contract.py
+          python3 ./scripts/public-web/validate-surface-contract.py
           --contract PUBLIC_SURFACE.json
           --site-dir build/public-site
           --evidence build/public-surface-conformance.json

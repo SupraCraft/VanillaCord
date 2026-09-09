@@ -1,0 +1,204 @@
+name: minecraft-compatibility
+
+on:
+  push:
+    branches: ['qualification/bridge/**']
+    paths:
+      - 'BRIDGE_QUALIFICATION.json'
+      - 'java/**'
+      - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/wrapper/**'
+      - 'scripts/check-minecraft-compatibility.sh'
+      - 'scripts/configure-bridge-qualification.py'
+      - 'scripts/verify-artifact-contract.sh'
+      - '.github/workflows/compatibility.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'java/**'
+      - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/wrapper/**'
+      - 'scripts/check-minecraft-compatibility.sh'
+      - 'scripts/configure-bridge-qualification.py'
+      - 'scripts/resolve-bridge-version.sh'
+      - 'scripts/verify-artifact-contract.sh'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/compatibility.yml'
+      - 'PROJECT_CONTRACT.json'
+      - 'COMPATIBILITY_STRATEGY.md'
+      - 'ARTIFACT_IDENTITY.md'
+      - 'VERSIONING.md'
+  workflow_dispatch:
+    inputs:
+      bridge_version:
+        description: "Exact Bridge version to qualify; leave empty for normal resolver behavior"
+        required: false
+      include_snapshot:
+        description: "Include latest Mojang snapshot/RC"
+        required: false
+        default: "true"
+      boot_stable:
+        description: "Boot-smoke the latest stable patched server"
+        required: false
+        default: "true"
+      required_supported:
+        description: "Space-separated required supported Minecraft versions"
+        required: false
+        default: "1.21.11 1.20.6 1.20.4 1.19.4 1.18.2"
+      best_effort_legacy:
+        description: "Space-separated best-effort legacy Minecraft versions"
+        required: false
+        default: "1.17.1 1.16.5 1.12.2 1.8.9 1.7.10"
+  schedule:
+    - cron: "17 4 * * *"
+
+concurrency:
+  group: minecraft-compatibility-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BRIDGE_OWNER: ${{ github.repository_owner }}
+  BRIDGE_VERSION: ${{ inputs.bridge_version || vars.BRIDGE_VERSION || '0.1.1-rc.1' }}
+  BRIDGE_QUALIFICATION_MODE: "false"
+  BRIDGE_PACKAGES_USERNAME: ${{ vars.BRIDGE_PACKAGES_USERNAME || github.actor }}
+  GITHUB_TOKEN: ${{ github.token }}
+  VANILLACORD_INCLUDE_SNAPSHOT: ${{ inputs.include_snapshot || 'true' }}
+  VANILLACORD_BOOT_SMOKE: ${{ inputs.boot_stable || 'true' }}
+  VANILLACORD_REQUIRED_SUPPORTED: ${{ inputs.required_supported || '1.21.11 1.20.6 1.20.4 1.19.4 1.18.2' }}
+  VANILLACORD_BEST_EFFORT_LEGACY: ${{ inputs.best_effort_legacy || '1.17.1 1.16.5 1.12.2 1.8.9 1.7.10' }}
+  VANILLACORD_COMPAT_REPORT: docs/minecraft-compatibility-report.md
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up JDK
+        uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+          server-id: bridge-github
+          server-username: BRIDGE_PACKAGES_USERNAME
+          server-password: GITHUB_TOKEN
+
+      - name: Verify pinned Maven
+        run: |
+          ./mvnw --version | tee /tmp/maven-version.txt
+          grep -F 'Apache Maven 3.9.16' /tmp/maven-version.txt
+
+      - name: Configure exact Bridge release qualification
+        if: startsWith(github.ref, 'refs/heads/qualification/bridge/')
+        run: >-
+          python3 scripts/configure-bridge-qualification.py
+          BRIDGE_QUALIFICATION.json
+          --ref "$GITHUB_REF"
+          --github-env "$GITHUB_ENV"
+
+      - name: Configure pull request scope
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "VANILLACORD_INCLUDE_SNAPSHOT=false" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
+          echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BEST_EFFORT_LEGACY=none" >> "$GITHUB_ENV"
+
+      - name: Configure scheduled sentinel scope
+        if: github.event_name == 'schedule'
+        run: |
+          echo "VANILLACORD_INCLUDE_SNAPSHOT=true" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BOOT_SMOKE=true" >> "$GITHUB_ENV"
+          echo "VANILLACORD_REQUIRED_SUPPORTED=none" >> "$GITHUB_ENV"
+          echo "VANILLACORD_BEST_EFFORT_LEGACY=none" >> "$GITHUB_ENV"
+
+      - name: Resolve canonical Bridge dev build
+        if: env.BRIDGE_VERSION == '' && !startsWith(github.ref, 'refs/heads/qualification/bridge/')
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(bash ./scripts/resolve-bridge-version.sh)"
+          echo "Using Bridge ${VERSION}"
+          echo "BRIDGE_VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Build VanillaCord
+        run: ./mvnw -B verify -Dbridge.owner=${BRIDGE_OWNER} -Dbridge.version=${BRIDGE_VERSION}
+
+      - name: Locate canonical VanillaCord artifact
+        run: |
+          JAR="$(find artifacts -maxdepth 1 -type f -name 'supracraft-vanillacord-*.jar' -print -quit)"
+          test -n "$JAR"
+          echo "VANILLACORD_JAR=$JAR" >> "$GITHUB_ENV"
+
+      - name: Verify exact Bridge coordinate in consumer artifact
+        run: |
+          unzip -p "$VANILLACORD_JAR" META-INF/MANIFEST.MF | tr -d '\r' > /tmp/vanillacord-manifest.mf
+          grep -Fx "Bridge-Version: ${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
+          grep -Fx "Bridge-Coordinate: io.github.supracraft:bridge:${BRIDGE_VERSION}" /tmp/vanillacord-manifest.mf
+
+      - name: Run Minecraft compatibility probe
+        run: bash ./scripts/check-minecraft-compatibility.sh "$VANILLACORD_JAR"
+
+      - name: Record Bridge consumer qualification evidence
+        if: startsWith(github.ref, 'refs/heads/qualification/bridge/') || inputs.bridge_version != ''
+        run: |
+          mkdir -p build/bridge-consumer-qualification
+          python3 - "$BRIDGE_VERSION" "$VANILLACORD_JAR" "$GITHUB_SHA" "$GITHUB_REF" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+
+          bridge_version, jar_name, source_sha, source_ref = sys.argv[1:]
+          jar = pathlib.Path(jar_name)
+          evidence = {
+              "schema": "vanillacord-bridge-consumer-qualification/1",
+              "status": "pass",
+              "bridgeRepository": "SupraCraft/Bridge",
+              "bridgeVersion": bridge_version,
+              "vanillaCordRepository": "SupraCraft/VanillaCord",
+              "vanillaCordSourceCommit": source_sha,
+              "vanillaCordSourceRef": source_ref,
+              "consumerArtifact": jar.name,
+              "consumerArtifactSha256": hashlib.sha256(jar.read_bytes()).hexdigest(),
+              "checks": {
+                  "reactorVerify": "pass",
+                  "exactBridgeManifestCoordinate": "pass",
+                  "minecraftCompatibility": "pass"
+              },
+              "minecraftCompatibilityReport": "docs/minecraft-compatibility-report.md"
+          }
+          out = pathlib.Path("build/bridge-consumer-qualification/bridge-consumer-qualification.json")
+          out.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Add report to job summary
+        if: always()
+        run: |
+          if [[ -f "$VANILLACORD_COMPAT_REPORT" ]]; then
+            cat "$VANILLACORD_COMPAT_REPORT" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No compatibility report was generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: minecraft-compatibility-report
+          path: |
+            ${{ env.VANILLACORD_COMPAT_REPORT }}
+            build/bridge-consumer-qualification/bridge-consumer-qualification.json
+          if-no-files-found: warn
+          retention-days: 30

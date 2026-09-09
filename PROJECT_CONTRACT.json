@@ -1,0 +1,186 @@
+{
+  "schema_version": "1.6.0",
+  "repository": "SupraCraft/VanillaCord",
+  "upstream_repository": "ME1312/VanillaCord",
+  "role": "sanitized published source, public build/package/release surface for VanillaCord",
+  "authority": {
+    "repository_role": "public-deployment-projection",
+    "normal_product_development_allowed": false,
+    "direct_public_fixes": "exception-and-reconciliation-required"
+  },
+  "source_version": "2.9.1-dev",
+  "brand": {
+    "organization": "SupraCraft",
+    "contract_version": "0.1.0-candidate",
+    "profile": "BRAND_PROFILE.json",
+    "governance_source": "vendored reviewed project profile",
+    "runtime_dependency_on_private_repo": false
+  },
+  "artifact": {
+    "maven": "io.github.supracraft:vanillacord:<version>",
+    "standalone": "supracraft-vanillacord-<version>.jar",
+    "embedded_project_icon": "META-INF/supracraft/vanillacord/icon.svg",
+    "historical_aliases_forbidden_in_current_output": [
+      "VanillaCord.jar"
+    ]
+  },
+  "versioning": {
+    "development_source": "X.Y.Z-dev",
+    "development_ci": "X.Y.Z-dev.<github-run-number>",
+    "release_candidate": "X.Y.Z-rc.N",
+    "release": "X.Y.Z",
+    "release_tag": "vX.Y.Z",
+    "maven_snapshot_semantics": false
+  },
+  "toolchain": {
+    "maven_wrapper": "3.3.4",
+    "maven": "3.9.16",
+    "java_bytecode_release": 21,
+    "injected_server_bytecode_release": 8,
+    "current_minecraft_probe_jdk": 25
+  },
+  "bridge": {
+    "repository": "SupraCraft/Bridge",
+    "group": "io.github.supracraft",
+    "versioning": "independent",
+    "release_input_policy": "exact immutable coordinate",
+    "release_input_allowed": [
+      "X.Y.Z-rc.N",
+      "X.Y.Z"
+    ],
+    "release_input_validator": "scripts/validate-release-bridge-version.py",
+    "release_input_policy_check": "scripts/check-release-bridge-policy.sh",
+    "consumer_qualification_workflow": ".github/workflows/compatibility.yml",
+    "consumer_qualification_branch": "qualification/bridge/<version>",
+    "consumer_qualification_manifest": "BRIDGE_QUALIFICATION.json",
+    "consumer_qualification_configurator": "scripts/configure-bridge-qualification.py",
+    "consumer_qualification_evidence": "build/bridge-consumer-qualification/bridge-consumer-qualification.json",
+    "user_identity_visibility": "implementation-detail-not-part-of-brand"
+  },
+  "stable_release": {
+    "manifest": "STABLE_RELEASE.json",
+    "archive": "release-manifests/<version>.json",
+    "request": "RELEASE_REQUEST.json",
+    "workflow": ".github/workflows/stable-release.yml",
+    "supported_minecraft": "SUPPORTED_MINECRAFT.json",
+    "supported_matrix_gate": "scripts/run-supported-matrix.py",
+    "publication_policy": "publish only after reproducibility, artifact, exact Bridge, complete patched runtime closure, target-Java classfile compatibility, and all declared Minecraft patch+boot gates pass"
+  },
+  "validation": {
+    "build": "./mvnw -B verify",
+    "artifact_contract": "scripts/verify-artifact-contract.sh",
+    "reproducibility": "scripts/verify-reproducible-build.sh",
+    "compatibility_probe": "scripts/check-minecraft-compatibility.sh",
+    "supported_minecraft_matrix": "scripts/run-supported-matrix.py",
+    "injected_runtime_bytecode_test": "test/java/vanillacord/server/InjectedRuntimeBytecodeTest.java",
+    "bridge_consumer_qualification": ".github/workflows/compatibility.yml",
+    "documentation_contract": "scripts/check-documentation-contract.sh",
+    "release_bridge_input_policy": "scripts/check-release-bridge-policy.sh",
+    "public_site_builder": "scripts/build-public-site.py",
+    "public_site_check": "scripts/check-public-site.py",
+    "public_site_readiness_workflow": ".github/workflows/public-site-readiness.yml",
+    "public_site_playwright_config": "playwright.config.mjs",
+    "public_site_browser_test": "tests/site/public-site.spec.mjs",
+    "public_site_accessibility_engine": "@axe-core/playwright",
+    "public_site_lighthouse_config": "lighthouserc.cjs",
+    "public_site_link_checker": "lycheeverse/lychee-action",
+    "browser_projects": [
+      "desktop-chromium",
+      "desktop-firefox",
+      "desktop-webkit",
+      "android-chromium",
+      "iphone-webkit"
+    ],
+    "accessibility_target": "WCAG 2.2 AA",
+    "compatibility_tiers": {
+      "current-stable": "blocking",
+      "required-supported": "blocking-when-requested",
+      "current-development": "advisory",
+      "best-effort": "advisory"
+    }
+  },
+  "diagnostics": {
+    "transport": "stdout-stderr",
+    "stable_event_ids": true,
+    "event_catalog": "docs/diagnostics.md",
+    "authoritative_failure_signal": "process-exit-code",
+    "progress_stream": "stdout",
+    "failure_stream": "stderr"
+  },
+  "retention": {
+    "actions_reproducibility_diagnostics_days": 7,
+    "actions_build_evidence_days": 14,
+    "actions_compatibility_report_days": 30,
+    "bridge_consumer_qualification_days": 30,
+    "release_assets": "durable-historical-provenance",
+    "bridge_package_cleanup": "owned-by-SupraCraft/Bridge-retention-policy"
+  },
+  "public_surface": {
+    "github_metadata": "GITHUB_METADATA.json",
+    "metadata_apply": "scripts/apply-github-metadata.py",
+    "pages_entrypoint": "docs/index.html",
+    "pages_url": "https://supracraft.github.io/VanillaCord/",
+    "pages_source": "github-actions",
+    "pages_workflow": ".github/workflows/pages.yml",
+    "site_builder": "scripts/build-public-site.py",
+    "brand_profile": "BRAND_PROFILE.json",
+    "brand_manifest": "docs/assets/brand/brand.json",
+    "brand_guidelines": "docs/brand-guidelines.md",
+    "readiness_policy": "docs/PUBLIC_SITE_RELEASE_READINESS.md",
+    "human_routes": {
+      "download": "download/",
+      "guide": "guide/",
+      "support": "support/",
+      "releases": "releases/",
+      "release_info": "releases/<version>/",
+      "accessibility": "accessibility/"
+    },
+    "machine_endpoints": [
+      "project.json",
+      "github.json",
+      "brand.json",
+      "artifacts.json",
+      "compatibility.json",
+      "support-matrix.json",
+      "releases/stable.json",
+      "releases/stable.txt",
+      "releases/stable-url.txt",
+      "releases/stable-sha256.txt",
+      "llms.txt"
+    ],
+    "stable_lookup_contract": {
+      "json": "releases/stable.json",
+      "version": "releases/stable.txt",
+      "artifact_url": "releases/stable-url.txt",
+      "sha256": "releases/stable-sha256.txt"
+    },
+    "upstream_attribution_required": true
+  },
+  "provenance": {
+    "source_repository": "SupraCraft/VanillaCord",
+    "upstream_repository": "ME1312/VanillaCord",
+    "records_exact_bridge_coordinate": true,
+    "records_bridge_consumer_qualification_evidence": true,
+    "records_git_commit_ref_run": true,
+    "records_supported_minecraft_matrix": true,
+    "fixed_archive_output_timestamp": true
+  },
+  "documentation": {
+    "human_entrypoint": "README.md",
+    "agent_instructions": "AGENTS.md",
+    "policy": "docs/DOCUMENTATION_POLICY.md",
+    "artifact_identity": "ARTIFACT_IDENTITY.md",
+    "versioning": "VERSIONING.md",
+    "compatibility_policy": "COMPATIBILITY_STRATEGY.md",
+    "compatibility_operations": "docs/compatibility.md",
+    "diagnostics": "docs/diagnostics.md",
+    "artifact_retention": "docs/artifact-retention.md",
+    "github_metadata": "GITHUB_METADATA.json",
+    "brand_profile": "BRAND_PROFILE.json",
+    "pages_entrypoint": "docs/index.html",
+    "brand_guidelines": "docs/brand-guidelines.md",
+    "public_site_release_readiness": "docs/PUBLIC_SITE_RELEASE_READINESS.md",
+    "modernization_ledger": "docs/build-modernization-status.md",
+    "historical_modernization_record": "MODERNIZATION_PLAN.md"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.2.0",
+  "repository": "SupraCraft/VanillaCord",
+  "description": "Connects vanilla Minecraft servers to Velocity and BungeeCord proxy networks with forwarded player identity.",
+  "homepage": "https://supracraft.github.io/VanillaCord/",
+  "topics": [
+    "bungeecord",
+    "bungeeguard",
+    "ip-forwarding",
+    "java",
+    "minecraft",
+    "minecraft-server",
+    "proxy",
+    "vanilla",
+    "velocity"
+  ],
+  "pages": {
+    "expected_enabled": true,
+    "url": "https://supracraft.github.io/VanillaCord/",
+    "source": "github-actions",
+    "builder": "scripts/build-public-site.py",
+    "workflow": ".github/workflows/pages.yml"
+  },
+  "brand": {
+    "organization": "SupraCraft",
+    "contract_version": "0.1.0-candidate",
+    "profile": "BRAND_PROFILE.json",
+    "manifest": "docs/assets/brand/brand.json",
+    "icon": "docs/assets/brand/icon.svg",
+    "hero": "docs/assets/brand/hero.svg",
+    "guidelines": "docs/brand-guidelines.md"
+  },
+  "upstream_repository": "ME1312/VanillaCord"
+}

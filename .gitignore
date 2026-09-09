@@ -1,0 +1,35 @@
+# IDE/System files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Editor swap/backup files
+*~
+*.swp
+*.swo
+
+# Build outputs
+/build/
+**/build/
+/target/
+**/target/
+/out/
+/bin/
+/dist/
+/javadoc/
+/artifacts/
+.gradle/
+/.m2/
+.env
+.vanillacord-compat-docker.sh
+
+# Java artifacts
+*.class
+*.jar
+*.war
+*.ear
+*.log
+dependency-reduced-pom.xml
+hs_err_pid*

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">VanillaCord connection illustration</title>
+  <desc id="desc">A plain warm server endpoint on the left connects by a cream cord with copper fittings to a cool proxy endpoint on the right.</desc>
+  <rect width="1200" height="620" rx="42" fill="#F7F2E7"/>
+  <path d="M0 468h1200v152H0z" fill="#E3D7BD"/>
+  <path d="M0 492h1200v128H0z" fill="#738B4E" opacity=".88"/>
+
+  <g transform="translate(110 164)">
+    <rect width="260" height="300" rx="28" fill="#D8C49C" stroke="#514A42" stroke-width="16"/>
+    <path d="M0 0h260v74H0z" fill="#F1E2BF"/>
+    <rect x="50" y="126" width="160" height="110" rx="12" fill="#8A6A45"/>
+    <rect x="98" y="161" width="64" height="48" rx="8" fill="#F1C35C"/>
+    <path d="M30 280h200" stroke="#B86B3F" stroke-width="12"/>
+  </g>
+
+  <g transform="translate(830 138)">
+    <rect width="260" height="334" rx="28" fill="#3F474B" stroke="#2C3133" stroke-width="16"/>
+    <rect x="48" y="70" width="164" height="24" rx="10" fill="#3DA2B8"/>
+    <rect x="48" y="120" width="118" height="24" rx="10" fill="#6F8C45"/>
+    <rect x="48" y="170" width="164" height="24" rx="10" fill="#3DA2B8"/>
+    <rect x="48" y="220" width="136" height="24" rx="10" fill="#D9BE8B"/>
+    <circle cx="210" cy="274" r="14" fill="#F1C35C"/>
+  </g>
+
+  <path d="M356 354 C500 230 682 472 848 344" fill="none" stroke="#514A42" stroke-width="78" stroke-linecap="round"/>
+  <path d="M356 354 C500 230 682 472 848 344" fill="none" stroke="#F1E2BF" stroke-width="56" stroke-linecap="round"/>
+  <path d="M362 354 C502 238 680 462 842 344" fill="none" stroke="#D9BE8B" stroke-width="8" stroke-dasharray="17 18" stroke-linecap="round"/>
+  <g fill="#B86B3F" stroke="#514A42" stroke-width="10">
+    <rect x="330" y="306" width="58" height="92" rx="10"/>
+    <rect x="816" y="296" width="58" height="92" rx="10"/>
+  </g>
+
+  <g fill="#514A42" opacity=".2">
+    <rect x="464" y="516" width="90" height="18" rx="9"/>
+    <rect x="640" y="536" width="132" height="18" rx="9"/>
+    <rect x="234" y="530" width="98" height="18" rx="9"/>
+  </g>
+</svg>

@@ -1,0 +1,143 @@
+package vanillacord.server;
+
+import bridge.Invocation;
+import com.google.gson.Gson;
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import vanillacord.translation.HandshakePacket;
+import vanillacord.translation.PlayerConnection;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.UUID;
+
+@SuppressWarnings({"AssignmentUsedAsCondition", "SpellCheckingInspection"})
+public class BungeeHelper extends ForwardingHelper {
+    private static final Gson GSON = new Gson();
+    private static final Method PROPERTY_NAME = propertyAccessor("name", "getName");
+    private static final Method PROPERTY_VALUE = propertyAccessor("value", "getValue");
+    private static final AttributeKey<UUID> UUID_KEY = attributeKey("-vch-uuid");
+    private static final AttributeKey<Property[]> PROPERTIES_KEY = attributeKey("-vch-properties");
+    private final String[] seecrets;
+
+    BungeeHelper() {
+        this.seecrets = null;
+    }
+
+    BungeeHelper(LinkedList<String> seecrets) {
+        Arrays.sort(this.seecrets = seecrets.toArray(new String[0]));
+    }
+
+    public void parseHandshake(Object connection, Object handshake) {
+        try {
+            Channel channel = new Invocation(PlayerConnection.class).ofMethod("getChannel").with(connection).invoke();
+            String uuid, host = new Invocation(HandshakePacket.class).ofMethod("getHostName").with(handshake).invoke();
+            String[] split = host.split("\00", 5);
+            if ((split.length != 4 && split.length != 3) || (uuid = split[2]).length() != 32) {
+                throw QuietException.show("If you wish to use IP forwarding, please enable it in your BungeeCord config as well!");
+            }
+
+        //  split[0]; // we don't do anything with the server address at this time
+            new Invocation(PlayerConnection.class).ofMethod("setAddress").with(connection).with(split[1]).invoke();
+            channel.attr(UUID_KEY).set(new UUID(
+                    Long.parseUnsignedLong(uuid.substring( 0, 16), 16),
+                    Long.parseUnsignedLong(uuid.substring(16, 32), 16)
+            ));
+
+            if (seecrets == null) {
+                channel.attr(PROPERTIES_KEY).set((split.length == 3)? new Property[0] : GSON.fromJson(split[3], Property[].class));
+            } else {
+                Property[] properties = (split.length == 4)? GSON.fromJson(split[3], Property[].class) : new Property[0];
+                if (properties.length != 0) {
+                    int length, i = 0;
+                    boolean invalid = true;
+                    final Property[] modified = new Property[length = properties.length - 1];
+                    for (Property property : properties) {
+                        if ("bungeeguard-token".equals(propertyName(property))) {
+                            if (invalid = !invalid || Arrays.binarySearch(seecrets, propertyValue(property)) < 0) {
+                                break;
+                            }
+                        } else if (i != length) {
+                            modified[i++] = property;
+                        }
+                    }
+                    if (invalid) throw QuietException.show("Received invalid IP forwarding data. Did you use the right forwarding secret?");
+                    channel.attr(PROPERTIES_KEY).set(modified);
+                } else {
+                    channel.attr(PROPERTIES_KEY).set(properties);
+                }
+            }
+        } catch (Exception e) {
+            throw QuietException.show(e);
+        }
+    }
+
+    public GameProfile injectProfile(Object connection, String username) {
+        try {
+            Channel channel = new Invocation(PlayerConnection.class).ofMethod("getChannel").with(connection).invoke();
+            UUID uuid = channel.attr(UUID_KEY).get();
+            if (uuid == null) {
+                throw QuietException.show("IP forwarding data missing for connecting player. Is IP forwarding enabled on the proxy?");
+            }
+            Property[] properties = channel.attr(PROPERTIES_KEY).get();
+            Multimap<String, Property> props = ArrayListMultimap.create();
+            if (properties != null) {
+                for (Property property : properties) {
+                    props.put(propertyName(property), property);
+                }
+            }
+            return ForwardingHelper.createProfile(uuid, username, props);
+        } catch (Exception e) {
+            throw QuietException.show(e);
+        }
+    }
+
+    private static Method propertyAccessor(String modern, String historical) {
+        try {
+            return Property.class.getMethod(modern);
+        } catch (NoSuchMethodException ignored) {
+            try {
+                return Property.class.getMethod(historical);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("Unsupported authlib Property API", e);
+            }
+        }
+    }
+
+    private static String propertyName(Property property) {
+        return invokePropertyAccessor(PROPERTY_NAME, property);
+    }
+
+    private static String propertyValue(Property property) {
+        return invokePropertyAccessor(PROPERTY_VALUE, property);
+    }
+
+    private static String invokePropertyAccessor(Method accessor, Property property) {
+        try {
+            return (String) accessor.invoke(property);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to read authlib Property", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> AttributeKey<T> attributeKey(String name) {
+        try {
+            try {
+                Method valueOf = AttributeKey.class.getMethod("valueOf", String.class);
+                return (AttributeKey<T>) valueOf.invoke(null, name);
+            } catch (NoSuchMethodException ignored) {
+                Constructor<AttributeKey> constructor = AttributeKey.class.getConstructor(String.class);
+                return (AttributeKey<T>) constructor.newInstance(name);
+            }
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unsupported Netty AttributeKey API", e);
+        }
+    }
+}

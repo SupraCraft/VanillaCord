@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">VanillaCord project icon</title>
+  <desc id="desc">A cream braided cable with copper connectors linking a plain vanilla server block to a proxy node.</desc>
+  <g stroke-linejoin="round">
+    <g transform="translate(24 154)">
+      <rect width="132" height="196" rx="18" fill="#D8C49C" stroke="#514A42" stroke-width="14"/>
+      <path d="M0 0h132v50H0z" fill="#F1E2BF"/>
+      <rect x="28" y="82" width="76" height="70" rx="8" fill="#8A6A45"/>
+      <rect x="50" y="103" width="32" height="30" rx="5" fill="#F1C35C"/>
+    </g>
+    <g transform="translate(356 142)">
+      <rect width="132" height="220" rx="18" fill="#3F474B" stroke="#2C3133" stroke-width="14"/>
+      <rect x="25" y="48" width="82" height="18" rx="8" fill="#3DA2B8"/>
+      <rect x="25" y="86" width="58" height="18" rx="8" fill="#6F8C45"/>
+      <rect x="25" y="124" width="82" height="18" rx="8" fill="#3DA2B8"/>
+      <circle cx="105" cy="174" r="10" fill="#F1C35C"/>
+    </g>
+    <path d="M154 278 C218 218 292 338 358 276" fill="none" stroke="#514A42" stroke-width="56" stroke-linecap="round"/>
+    <path d="M154 278 C218 218 292 338 358 276" fill="none" stroke="#F1E2BF" stroke-width="38" stroke-linecap="round"/>
+    <path d="M158 278 C220 222 290 332 354 276" fill="none" stroke="#D9BE8B" stroke-width="5" stroke-dasharray="10 12" stroke-linecap="round"/>
+    <g fill="#B86B3F" stroke="#514A42" stroke-width="8">
+      <rect x="130" y="245" width="42" height="66" rx="8"/>
+      <rect x="340" y="243" width="42" height="66" rx="8"/>
+    </g>
+  </g>
+</svg>

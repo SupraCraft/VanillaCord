@@ -1,0 +1,123 @@
+name: public-site-readiness
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'PROJECT_CONTRACT.json'
+      - 'PUBLIC_SURFACE.json'
+      - 'GITHUB_METADATA.json'
+      - 'STABLE_RELEASE.json'
+      - 'SUPPORTED_MINECRAFT.json'
+      - 'release-manifests/**'
+      - 'docs/**'
+      - 'scripts/build-public-site.py'
+      - 'scripts/check-public-site.py'
+      - 'scripts/public-web/validate-surface-contract.py'
+      - 'package.json'
+      - 'playwright.config.mjs'
+      - 'lighthouserc.cjs'
+      - 'tests/site/**'
+      - '.github/workflows/public-site-readiness.yml'
+      - '.github/workflows/pages.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'PROJECT_CONTRACT.json'
+      - 'PUBLIC_SURFACE.json'
+      - 'GITHUB_METADATA.json'
+      - 'STABLE_RELEASE.json'
+      - 'SUPPORTED_MINECRAFT.json'
+      - 'release-manifests/**'
+      - 'docs/**'
+      - 'scripts/build-public-site.py'
+      - 'scripts/check-public-site.py'
+      - 'scripts/public-web/validate-surface-contract.py'
+      - 'package.json'
+      - 'playwright.config.mjs'
+      - 'lighthouserc.cjs'
+      - 'tests/site/**'
+      - '.github/workflows/public-site-readiness.yml'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-site-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+
+      - name: Build candidate public site
+        run: python3 ./scripts/build-public-site.py --output build/public-site --base-url http://127.0.0.1:4173/
+
+      - name: Validate deterministic candidate contract
+        run: python3 ./scripts/check-public-site.py --site-dir build/public-site --navigation-base http://127.0.0.1:4173/
+
+      - name: Validate surface model and discovery
+        run: >-
+          python3 ./scripts/public-web/validate-surface-contract.py
+          --contract PUBLIC_SURFACE.json
+          --site-dir build/public-site
+          --navigation-base http://127.0.0.1:4173/
+          --evidence build/public-surface-conformance.json
+
+      - name: Install web QA dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Install Playwright browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run Playwright browser and accessibility matrix
+        run: npm run site:test
+
+      - name: Resolve Chromium for Lighthouse
+        run: |
+          CHROME_PATH="$(node --input-type=module -e "import { chromium } from '@playwright/test'; process.stdout.write(chromium.executablePath())")"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+
+      - name: Run Lighthouse CI budgets
+        run: npm run site:lighthouse
+
+      - name: Check external documentation links
+        if: github.repository == 'SupraCraft/VanillaCord'
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8
+        with:
+          lycheeVersion: v0.24.2
+          args: >-
+            --verbose
+            --no-progress
+            --max-retries 2
+            --timeout 20
+            --accept 200,204,206,429
+            --exclude '^http://127\.0\.0\.1(:[0-9]+)?/'
+            --exclude '^https://supracraft\.github\.io/VanillaCord/'
+            './README.md'
+            './docs/**/*.md'
+            './build/public-site/**/*.html'
+
+      - name: Upload public-site readiness evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: public-site-readiness
+          path: |
+            build/playwright-report
+            build/playwright-results
+            build/lighthouse
+            build/public-surface-conformance.json
+            lychee/out.md
+          if-no-files-found: ignore
+          retention-days: 14

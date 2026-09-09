@@ -1,0 +1,16 @@
+{
+  "schema": "vanillacord-published-release/1",
+  "version": "2.8",
+  "tag": "v2.8",
+  "channel": "stable",
+  "published_at": "2026-06-21T21:08:51Z",
+  "release_url": "https://github.com/SupraCraft/VanillaCord/releases/tag/v2.8",
+  "info_url": "https://supracraft.github.io/VanillaCord/releases/2.8/",
+  "artifact": {
+    "name": "VanillaCord.jar",
+    "download_url": "https://github.com/SupraCraft/VanillaCord/releases/download/v2.8/VanillaCord.jar",
+    "sha256": "835ac894945814047326d00556c30163bada6306a36544a28a5035c22a51fff6"
+  },
+  "legacy_naming": true,
+  "summary": "Previous stable VanillaCord release. The next stable release adopts SupraCraft canonical artifact naming and release provenance."
+}

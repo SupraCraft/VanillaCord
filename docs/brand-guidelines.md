@@ -8,11 +8,22 @@ The central visual idea is a **vanilla-cream cord connecting a plain vanilla ser
 
 - The cord must remain the most recognizable part of the mark.
 - Cream/ivory expresses both vanilla flavor and the plain/stock meaning of vanilla Minecraft.
-- Copper connector hardware provides a small shared SupraCraft family cue.
-- Cyan may indicate network activity; grass/stone may provide restrained Minecraft-adjacent context.
+- Copper connector hardware provides the warm craft cue.
 - Bridge is an implementation dependency and must not be depicted as part of the user-facing identity.
 
 The icon is intentionally endpoint-anchored. Do not turn it into a free-standing loop, knot, or ambiguous organic silhouette.
+
+The **server–cord–proxy silhouette is the identity anchor**. The hero and icon must read as the same object at different scales. The hero may add space and presentation framing, but it should not substitute a different metaphor or rearrange the endpoints so aggressively that the icon no longer feels related.
+
+## Current human-facing palette
+
+Use a deliberately reduced three-color working palette in hero/icon artwork:
+
+- charcoal-brown `#514A42` — dark structure / field;
+- vanilla cream `#F1E2BF` — cord and light surfaces;
+- copper `#B86B3F` — connector hardware and small emphasis.
+
+Legacy/supporting colors such as cyan, grass, stone, and toasted-vanilla may remain in established UI or compatibility contexts where they carry meaning, but new identity artwork should not use the whole palette at once. The reduced palette is intended to strengthen silhouette recognition and keep the visual identity durable.
 
 ## Minecraft relationship
 
@@ -26,8 +37,8 @@ Child-friendly means clear, non-hostile, and understandable—not cartoonish or 
 
 ## Canonical project assets
 
-- `docs/assets/brand/icon.svg` — public primary mark and favicon.
-- `docs/assets/brand/hero.svg` — wider Pages/social illustration.
+- `docs/assets/brand/icon.svg` — public primary mark, favicon, and small-scale silhouette.
+- `docs/assets/brand/hero.svg` — wider Pages/social illustration using the same server–cord–proxy silhouette.
 - `docs/assets/brand/brand.json` — public machine-readable brand manifest.
 - `resources/META-INF/supracraft/vanillacord/icon.svg` — same primary mark bundled as a classpath resource in the JAR.
 
@@ -49,4 +60,4 @@ The site must remain useful without JavaScript. Machine consumers should prefer 
 
 ## Organization lifecycle
 
-This implementation currently tracks SupraCraft brand contract `0.1.0-candidate`. Future organization-brand changes are adopted through an explicit project change/PR; the project must never pull mutable branding from an external governance system during a normal build.
+Future organization-brand changes are adopted through an explicit project change/PR; the project must never pull mutable branding from an external governance system during a normal build.

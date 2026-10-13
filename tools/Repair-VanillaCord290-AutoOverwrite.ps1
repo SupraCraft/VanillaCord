@@ -1,5 +1,5 @@
 #requires -Version 5.1
-[CmdletBinding()]param([switch]$SelfTest)
+[CmdletBinding()]param([switch]$SelfTest,[switch]$PublicPreflight)
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12
@@ -72,6 +72,16 @@ function TestRules {
 }
 TestRules
 if($SelfTest){return}
+if($PublicPreflight){
+ $script:phase='public-policy';Policy
+ $items=@(Assets)
+ Require ($items.Count -eq 1) 'Expected one public JAR in read-only public preflight'
+ $classification='UNKNOWN_OR_FOREIGN'
+ if(IsWrong $items[0]){$classification='KNOWN_AUTOMATED_OVERWRITE'}
+ if(IsOriginal $items[0]){$classification='ORIGINAL_RESTORED'}
+ Write-Host "VC290_PS51_PUBLIC_PREFLIGHT_PASS: public_asset_classification=$classification"
+ return
+}
 $tmp=Join-Path ([IO.Path]::GetTempPath()) ('vc290fix-'+[guid]::NewGuid().ToString('N'))
 $null=New-Item -ItemType Directory -Path $tmp
 try{

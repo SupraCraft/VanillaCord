@@ -40,8 +40,6 @@ on:
       - 'AGENTS.md'
       - 'MODERNIZATION_PLAN.md'
       - 'docs/build-modernization-status.md'
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -208,7 +206,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: github.event_name != 'push' && github.event_name != 'pull_request'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -227,6 +225,17 @@ jobs:
             exit 1
           fi
           echo "TAG=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse an existing public release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.vars.outputs.TAG }}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "BLOCKED: $tag is already published; this job must never replace its assets." >&2
+            exit 1
+          fi
 
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0

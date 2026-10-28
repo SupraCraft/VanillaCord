@@ -1,5 +1,11 @@
 # VanillaCord
 
+<p align="center">
+  <img src="docs/assets/brand/hero.svg" alt="A vanilla-cream cord with copper connectors linking a plain vanilla server block to a proxy node." width="900">
+</p>
+
+**Keep it vanilla. Go further.**
+
 [![Build Status](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml/badge.svg)](https://github.com/SupraCraft/VanillaCord/actions/workflows/build.yml)
 [![Release Version](https://img.shields.io/github/release/SupraCraft/VanillaCord/all.svg)](https://github.com/SupraCraft/VanillaCord/releases)
 
